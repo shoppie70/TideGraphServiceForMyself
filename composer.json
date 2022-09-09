@@ -4,12 +4,12 @@
       "App\\": "app/"
     }
   },
-  "require": {
-    "illuminate/http": "^9.28"
-  },
   "config": {
     "platform": {
       "php": "8.0.19."
     }
+  },
+  "require": {
+    "nesbot/carbon": "^2.62"
   }
 }
