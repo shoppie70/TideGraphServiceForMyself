@@ -6,17 +6,19 @@ use Exception;
 
 class TideGraphService
 {
-    private string $base_uri = "https://tide736.net/api/get_tide.php?pc=28&hc=7&rg=day&";
+    private string $base_uri = "https://tide736.net/api/get_tide.php?rg=day&";
     protected string $query;
     protected string $json_data;
     protected string $date;
 
-    public function __construct(int $year, int $month, int $date)
+    public function __construct(int $year, int $month, int $date,string $prefecture, string $code)
     {
         $data = [
             'yr' => $year,
             'mn' => $month,
-            'dy' => $date
+            'dy' => $date,
+            'pc' => $prefecture,
+            'hc' => $code
         ];
 
         $this->date = $year . '-' . sprintf('%02d', $month) . '-' . sprintf('%02d', $date);

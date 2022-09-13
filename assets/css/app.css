@@ -1,0 +1,57 @@
+body {
+    -webkit-text-size-adjust: 100%;
+}
+
+.content-wrap {
+    position: relative;
+}
+
+.chart-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.tide-description {
+    position: absolute;
+    right: 1rem;
+    bottom: 5rem;
+    background-color: white;
+    opacity: 0.7;
+    padding: 1rem;
+    border: 1px solid #eee;
+    max-width: 250px;
+    width: 100%;
+    z-index: 2;
+}
+
+.dl {
+    display: flex;
+}
+
+.dt {
+    font-weight: bold;
+    width: 30%;
+}
+
+.dd {
+    text-align: right;
+    width: 70%;
+    margin: 0;
+}
+
+.date {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+@media(max-width: 767px) {
+    .chart-container {
+        position: relative;
+        width: 100vw;
+        height: 60vh;
+    }
+}
