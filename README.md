@@ -1,6 +1,6 @@
 # Tide Graph Service For Myself
 
-![](https://github.com/shoppie70/tide-graph-service/tree/main/assets/img/chart.png)
+![](https://raw.githubusercontent.com/shoppie70/tide-graph-service/main/assets/img/chart.png)
 
 - https://tidegraph.salvador79.dev/
 
