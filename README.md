@@ -1,5 +1,7 @@
 # Tide Graph Service For Myself
 
+![](https://github.com/shoppie70/tide-graph-service/tree/main/assets/img/chart.png)
+
 - https://tidegraph.salvador79.dev/
 
 自分がよく釣りに行く場所のタイドグラフをサクッと参照したかったので作成してみました。  
