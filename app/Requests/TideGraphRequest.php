@@ -11,8 +11,11 @@ class TideGraphRequest
     {
         $this->request = $request;
 
-        if (!isset($request['place'])) {
+        if (empty($request['place'])) {
             throw new \InvalidArgumentException('場所コードが送信されていません。');
+        }
+        if (empty($request['date'])) {
+            throw new \InvalidArgumentException('日時が送信されていません。');
         }
     }
 

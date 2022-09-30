@@ -45,7 +45,7 @@ require_once "vendor/autoload.php";
                         </label>
                     </dt>
                     <dd class="ml-4">
-                        <input class="border p-1" id="date" type="date" name="date">
+                        <input class="border p-1" id="date" type="date" name="date" required>
                     </dd>
                 </dl>
                 <div class="text-center mt-8">
