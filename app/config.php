@@ -76,6 +76,11 @@ $places = [
         'code' => '3',
     ],
     [
+        'name' => '小串',
+        'prefecture' => '33',
+        'code' => '5',
+    ],
+    [
         'name' => '宇野',
         'prefecture' => '33',
         'code' => '6',
