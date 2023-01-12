@@ -31,7 +31,7 @@ class TideGraphRequest
     {
         $place_array = explode('&', $request);
 
-        if (!(in_array($place_array[0], array_column(PLACES, 'prefecture'), true) && in_array($place_array[1], array_column(PLACES, 'code'), true))) {
+        if (!(in_array($place_array[0], array_column(ALL_PLACES, 'prefecture_code'), true) && in_array($place_array[1], array_column(ALL_PLACES, 'port_code'), true))) {
             throw new \InvalidArgumentException('場所コードが正しくありません。');
         }
 
