@@ -6,7 +6,7 @@ include_once __DIR__ . '/header.php';
     <div class="w-full max-w-lg rounded-2xl border bg-white p-4 shadow-x1 md:p-10">
         <div class="flex flex-col items-center space-y-4">
             <h1 class="text-center text-2xl font-bold text-gray-700 mb-8">
-                Tide Graph Chart for Myself
+                Tide Graph Chart
             </h1>
             <form action="chart.php" method="GET">
                 <dl class="flex items-center mb-4">
@@ -32,7 +32,7 @@ include_once __DIR__ . '/header.php';
                         </label>
                     </dt>
                     <dd class="ml-4">
-                        <input class="border p-1" id="date" type="date" name="date">
+                        <input class="border p-1" id="date" type="date" name="date" value="<?php echo date('Y-m-d'); ?>">
                     </dd>
                 </dl>
                 <div class="text-center mt-8">
