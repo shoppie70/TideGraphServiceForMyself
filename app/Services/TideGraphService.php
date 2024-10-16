@@ -54,6 +54,7 @@ class TideGraphService
             'edd' => $data['edd'],
             'flood' => $data['flood'],
             'moon' => $data['moon'],
+            'port' => $array['tide']['port']['harbor_namej']
         ];
     }
 }

@@ -1,0 +1,85 @@
+@import '../../node_modules/tailwindcss/base';
+@import '../../node_modules/tailwindcss/components';
+@import '../../node_modules/tailwindcss/utilities';
+@import 'reset';
+
+body {
+    -webkit-text-size-adjust: 100%;
+    font-family: "Helvetica Neue",
+    Arial,
+    "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans",
+    Meiryo,
+    sans-serif;
+}
+
+.content-wrap {
+    position: relative;
+}
+
+.chart-container {
+    position: relative;
+    width: 100vw;
+    height: 100svh;
+}
+
+.tide-description {
+    position: absolute;
+    right: 1rem;
+    bottom: 5rem;
+    background-color: white;
+    opacity: 0.7;
+    padding: 1rem;
+    border: 1px solid #eee;
+    max-width: 250px;
+    width: 100%;
+    z-index: 2;
+}
+
+.dl {
+    display: flex;
+    margin-bottom: 0.5rem;
+}
+
+.dt {
+    font-weight: bold;
+    width: 30%;
+}
+
+.dd {
+    text-align: right;
+    width: 70%;
+    margin: 0;
+}
+
+.date {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+@media screen and (max-width: 480px) {
+    canvas {
+        max-height: 45vh;
+    }
+
+    .tide-description {
+        right: 50%;
+        bottom: 2rem;
+        transform: translateX(50%);
+    }
+}
