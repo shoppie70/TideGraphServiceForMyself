@@ -11,7 +11,7 @@ class TideGraphService
     protected string $json_data;
     protected string $date;
 
-    public function __construct(int $year, int $month, int $date,string $prefecture, string $code)
+    public function __construct(int $year, int $month, int $date, string $prefecture, string $code)
     {
         $data = [
             'yr' => $year,
@@ -21,7 +21,7 @@ class TideGraphService
             'hc' => $code
         ];
 
-        $this->date = $year . '-' . sprintf('%02d', $month) . '-' . sprintf('%02d', $date);
+        $this->date  = $year . '-' . sprintf('%02d', $month) . '-' . sprintf('%02d', $date);
         $this->query = http_build_query($data);
 
         $this->get_json_data();
@@ -29,7 +29,7 @@ class TideGraphService
 
     public function get_json_data(): void
     {
-        $api_url = $this->base_uri . $this->query;
+        $api_url         = $this->base_uri . $this->query;
         $this->json_data = file_get_contents($api_url);
     }
 
@@ -39,8 +39,8 @@ class TideGraphService
             $array = json_decode($this->json_data, $associative = true, $depth = 512, JSON_THROW_ON_ERROR);
         } catch (Exception $e) {
             return [
-                'status' => 400,
-                'data' => [],
+                'status'  => 400,
+                'data'    => [],
                 'message' => $e->getMessage(),
             ];
         }
@@ -49,12 +49,12 @@ class TideGraphService
 
         return [
             'status' => 200,
-            'tide' => $data['tide'],
-            'sun' => $data['sun'],
-            'edd' => $data['edd'],
-            'flood' => $data['flood'],
-            'moon' => $data['moon'],
-            'port' => $array['tide']['port']['harbor_namej']
+            'tide'   => $data['tide'],
+            'sun'    => $data['sun'],
+            'edd'    => $data['edd'],
+            'flood'  => $data['flood'],
+            'moon'   => $data['moon'],
+            'port'   => $array['tide']['port']['harbor_namej']
         ];
     }
 }

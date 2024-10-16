@@ -1,18 +1,18 @@
 {
-  "autoload": {
-    "psr-4": {
-      "App\\": "app/"
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/config.php"
+        ]
     },
-    "files": [
-      "app/config.php"
-    ]
-  },
-  "config": {
-    "platform": {
-      "php": "8.0.19."
+    "config": {
+        "platform": {
+            "php": "8.0.19."
+        }
+    },
+    "require": {
+        "nesbot/carbon": "^2.62"
     }
-  },
-  "require": {
-    "nesbot/carbon": "^2.62"
-  }
 }

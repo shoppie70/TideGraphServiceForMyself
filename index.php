@@ -1,5 +1,5 @@
 <?php
-include_once __DIR__ ."/vendor/autoload.php";
+include_once __DIR__ . "/vendor/autoload.php";
 include_once __DIR__ . '/header.php';
 ?>
 <div class="flex h-screen items-center justify-center bg-sky-100 p-4">

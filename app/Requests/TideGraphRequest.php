@@ -2,7 +2,6 @@
 
 namespace App\Requests;
 
-
 class TideGraphRequest
 {
     protected array $request;
@@ -21,7 +20,7 @@ class TideGraphRequest
 
     public function __invoke(): array
     {
-        $date = $this->validate_date_request($this->request);
+        $date   = $this->validate_date_request($this->request);
         $places = $this->validate_place_request($this->request['place']);
 
         return $date + $places;
@@ -37,7 +36,7 @@ class TideGraphRequest
 
         return [
             'prefecture' => $place_array[0],
-            'code' => $place_array[1]
+            'code'       => $place_array[1]
         ];
     }
 
@@ -49,24 +48,24 @@ class TideGraphRequest
             }
 
             return [
-                'year' => $request['year'],
+                'year'  => $request['year'],
                 'month' => $request['month'],
-                'date' => $request['date']
+                'date'  => $request['date']
             ];
         }
 
-        $year = substr($this->request['date'], 0, 4);
+        $year  = substr($this->request['date'], 0, 4);
         $month = substr($this->request['date'], 5, 2);
-        $date = substr($this->request['date'], 8, 2);
+        $date  = substr($this->request['date'], 8, 2);
 
         if (!checkdate($month, $date, $year)) {
             throw new \RuntimeException('存在しない日付です。');
         }
 
         return [
-            'year' => $year,
+            'year'  => $year,
             'month' => $month,
-            'date' => $date
+            'date'  => $date
         ];
     }
 }

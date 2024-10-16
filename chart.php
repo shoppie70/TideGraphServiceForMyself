@@ -10,15 +10,14 @@ use App\Services\TideGraphService;
 Carbon::setLocale('ja');
 
 try {
-    $request = (new TideGraphRequest($_REQUEST))();
-    $date = (new GetRequestDateAction())($request);
-    $tide_data = (new TideGraphService($request['year'], $request['month'], $request['date'], $request['prefecture'], $request['code']));
+    $request         = (new TideGraphRequest($_REQUEST))();
+    $date            = (new GetRequestDateAction())($request);
+    $tide_data       = (new TideGraphService($request['year'], $request['month'], $request['date'], $request['prefecture'], $request['code']));
     $tide_data_array = $tide_data->get_tide_data_array();
 
     if ($tide_data_array['status'] !== 200) {
         throw new \RuntimeException('データの取得に失敗しました。');
     }
-
 } catch (Exception $e) {
     echo $e->getMessage();
     exit;
