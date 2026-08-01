@@ -6,7 +6,8 @@
 
 | 項目 | 内容                               |
 | ---- | ---------------------------------- |
-| URL  | `https://tidegraph.salvador79.dev` |
+| URL  | `https://static.sho-tsukamoto.jp/tidegraph/` |
+
 | 用途 | 釣行計画の立案・当日の潮況確認     |
 | 対象 | 自分専用（個人開発）               |
 | 作者 | Sho Tsukamoto                      |

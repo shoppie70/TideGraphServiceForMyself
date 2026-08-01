@@ -19,7 +19,7 @@
     <!-- 作成者情報 -->
     <meta name="author" content="Sho Tsukamoto"/>
     <meta name="robots" content="index, follow"/>
-    <link rel="canonical" href="https://tidegraph.salvador79.dev/"/>
+    <link rel="canonical" href="https://static.sho-tsukamoto.jp/tidegraph/"/>
 
     <!-- スマホ用アイコン (iOS) -->
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icon.png"/>
@@ -30,8 +30,8 @@
     <!-- ソーシャルメディア用のmetaタグ -->
     <meta property="og:title" content="シオヨミ - 潮見表・天気・風速"/>
     <meta property="og:description" content="選定したスポットの潮汐・天気・風速を素早く確認するための自分専用ツール。"/>
-    <meta property="og:image" content="https://tidegraph.salvador79.dev/assets/img/ogp.jpg"/>
-    <meta property="og:url" content="https://tidegraph.salvador79.dev"/>
+    <meta property="og:image" content="https://static.sho-tsukamoto.jp/tidegraph/assets/img/ogp.jpg"/>
+    <meta property="og:url" content="https://static.sho-tsukamoto.jp/tidegraph/"/>
     <meta property="og:type" content="website"/>
     <meta property="og:site_name" content="シオヨミ"/>
     <meta property="og:locale" content="ja_JP"/>
@@ -40,7 +40,8 @@
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="シオヨミ - 潮見表・天気・風速"/>
     <meta name="twitter:description" content="全国の潮見表、天気予報、風速データを一目で確認できるモダンなWebアプリ。"/>
-    <meta name="twitter:image" content="https://tidegraph.salvador79.dev/assets/img/ogp.jpg"/>
+    <meta name="twitter:image" content="https://static.sho-tsukamoto.jp/tidegraph/assets/img/ogp.jpg"/>
+
 
     <meta name="twitter:site" content="@shopico3"/>
 
