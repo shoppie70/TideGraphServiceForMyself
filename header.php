@@ -30,7 +30,7 @@
     <!-- ソーシャルメディア用のmetaタグ -->
     <meta property="og:title" content="シオヨミ - 潮見表・天気・風速"/>
     <meta property="og:description" content="選定したスポットの潮汐・天気・風速を素早く確認するための自分専用ツール。"/>
-    <meta property="og:image" content="https://raw.githubusercontent.com/shoppie70/tide-graph-service/main/assets/img/chart.png"/>
+    <meta property="og:image" content="https://tidegraph.salvador79.dev/assets/img/ogp.jpg"/>
     <meta property="og:url" content="https://tidegraph.salvador79.dev"/>
     <meta property="og:type" content="website"/>
     <meta property="og:site_name" content="シオヨミ"/>
@@ -40,7 +40,8 @@
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="シオヨミ - 潮見表・天気・風速"/>
     <meta name="twitter:description" content="全国の潮見表、天気予報、風速データを一目で確認できるモダンなWebアプリ。"/>
-    <meta name="twitter:image" content="https://raw.githubusercontent.com/shoppie70/tide-graph-service/main/assets/img/chart.png"/>
+    <meta name="twitter:image" content="https://tidegraph.salvador79.dev/assets/img/ogp.jpg"/>
+
     <meta name="twitter:site" content="@shopico3"/>
 
     <link rel="apple-touch-icon" href="assets/img/icon.png"/>
