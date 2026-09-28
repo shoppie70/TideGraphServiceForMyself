@@ -1,10 +1,11 @@
-FROM php:8.0-apache
+FROM php:8.1-apache
 
 # 必要なモジュールやツールをインストール
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     unzip \
-    && docker-php-ext-install pdo_mysql mysqli zip
+    && docker-php-ext-install pdo_mysql mysqli zip \
+    && rm -rf /var/lib/apt/lists/*
 
 # Apacheのmod_rewriteを有効化 (ルーティングなどで必要な場合)
 RUN a2enmod rewrite
