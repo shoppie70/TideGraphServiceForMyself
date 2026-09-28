@@ -3,9 +3,14 @@
 # スターサーバー SSH: ホスト=サーバーID.stars.ne.jp（または sv***.star.ne.jp）
 #   ユーザー=サーバーID / ポート=10022 / 認証=公開鍵のみ（パスワード不可）
 # 本番: https://static.sho-tsukamoto.jp/tidegraph
-# リモート: /sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
+# リモート: sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
 #
 # 必要な Secrets は DEPLOY.md を参照。値はリポジトリに書きません。
+#
+# ENABLE_AUTO_DEPLOY について:
+#   job の if: で vars.* を書くと Repository Variables しか見えない。
+#   Environment Variables も効かせるため、decide job で environment: production
+#   を付けたうえでステップ内で判定する。
 
 name: Deploy production
 
@@ -36,19 +41,65 @@ env:
   DEFAULT_SSH_PORT: "10022"
 
 jobs:
+  decide:
+    name: Decide deploy
+    runs-on: ubuntu-latest
+    # Environment vars は job 開始後に見える。ここを付けないと
+    # Environment production 側の ENABLE_AUTO_DEPLOY が参照できない。
+    environment: production
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+    steps:
+      - name: Evaluate deploy gate
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          # environment: production 付き job では repo + environment の vars が見える
+          ENABLE_AUTO_DEPLOY: ${{ vars.ENABLE_AUTO_DEPLOY }}
+        run: |
+          set -euo pipefail
+          # 空白・大文字小文字を正規化（"true" / "True" / " true " / "1" / "yes"）
+          flag="$(printf '%s' "${ENABLE_AUTO_DEPLOY:-}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+          deploy=false
+          reason=""
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            deploy=true
+            reason="workflow_dispatch（手動実行は常に可）"
+          elif [ "$REF_NAME" = "cursor/deploy-dry-run-446a" ] || [ "$REF_NAME" = "cursor/deploy-live-446a" ]; then
+            deploy=true
+            reason="deploy 専用ブランチ ${REF_NAME}"
+          elif [ "$EVENT_NAME" = "push" ] && [ "$REF_NAME" = "main" ]; then
+            case "$flag" in
+              true|1|yes)
+                deploy=true
+                reason="main push + ENABLE_AUTO_DEPLOY=${ENABLE_AUTO_DEPLOY}"
+                ;;
+              *)
+                reason="main push だが ENABLE_AUTO_DEPLOY が有効でない（生値='${ENABLE_AUTO_DEPLOY}'）。Settings → Secrets and variables → Actions → Variables（リポジトリ）または Environment production → Variables に true を設定"
+                ;;
+            esac
+          else
+            reason="未対応のトリガー event=${EVENT_NAME} ref=${REF_NAME}"
+          fi
+
+          echo "deploy=${deploy}" >> "$GITHUB_OUTPUT"
+          echo "=== Deploy gate ==="
+          echo "event=${EVENT_NAME} ref=${REF_NAME}"
+          echo "ENABLE_AUTO_DEPLOY raw='${ENABLE_AUTO_DEPLOY}' normalized='${flag}'"
+          echo "decision deploy=${deploy}"
+          echo "reason: ${reason}"
+          if [ "$deploy" != "true" ]; then
+            echo "::notice::Deploy skipped: ${reason}"
+          fi
+
   deploy:
     name: Build and SSH deploy
+    needs: decide
+    if: needs.decide.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     environment: production
-    # - workflow_dispatch: 常に実行可
-    # - cursor/deploy-dry-run-446a: 常に dry_run
-    # - cursor/deploy-live-446a: 本番同期（dispatch 権限が無い場合の本番実行用）
-    # - main push: ENABLE_AUTO_DEPLOY=true のときのみ本番
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.ref_name == 'cursor/deploy-dry-run-446a' ||
-      github.ref_name == 'cursor/deploy-live-446a' ||
-      (github.event_name == 'push' && github.ref_name == 'main' && vars.ENABLE_AUTO_DEPLOY == 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4

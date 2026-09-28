@@ -25,9 +25,21 @@ FTPS（port 21）の dry_run は `Timeout (control socket)` で失敗した。
 
 | トリガー | 動作 |
 | -------- | ---- |
-| `main` へ push | Variable `ENABLE_AUTO_DEPLOY=true` のときのみ本番同期 |
+| `main` へ push | `ENABLE_AUTO_DEPLOY=true` のときのみ本番同期 |
 | `cursor/deploy-dry-run-446a` へ push | 常に **dry_run**（アップロード無し） |
 | Actions 手動 | `dry_run` 入力で確認／本番 |
+
+### `ENABLE_AUTO_DEPLOY` の置き場所（重要）
+
+| 置き場所 | 効くか |
+| -------- | ------ |
+| **Repository** Variables（Settings → Secrets and variables → Actions → **Variables** タブ） | ✅ 推奨 |
+| **Environment `production`** → Variables | ✅（ワークフローの `decide` job が Environment 付きで評価） |
+| Environment Secrets / 別 Environment | ❌ |
+
+- 値は **`true`**（前後空白や `True` / `1` / `yes` も可）
+- job の `if: vars.*` だけだと **Repository Variables しか見えない**ため、このリポジトリでは `decide` job で Environment 側も判定する
+- skip 時は Actions の **Decide deploy** ジョブログに理由が出る
 
 ## vendor（Composer）方針
 
@@ -52,7 +64,7 @@ Environment **`production`**（推奨）または Repository Secrets:
 | `DEPLOY_REMOTE_DIR` | リモートパス | `sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/` |
 | `SSH_PORT` | SSH ポート | `10022` |
 | `PROD_BASE_URL` | スモーク URL | `https://static.sho-tsukamoto.jp/tidegraph` |
-| `ENABLE_AUTO_DEPLOY` | main push で本番デプロイ | 未設定＝しない |
+| `ENABLE_AUTO_DEPLOY` | main push で本番デプロイ | 未設定＝しない（**Repository Variables 推奨**。Environment `production` でも可） |
 
 ## 初回セットアップ（SSH）
 
