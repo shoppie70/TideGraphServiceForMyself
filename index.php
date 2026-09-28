@@ -1,5 +1,14 @@
 <?php
 include_once __DIR__ . "/vendor/autoload.php";
+
+use App\Support\PageEmbed;
+use App\Support\ShioyomiPayload;
+use App\Support\Site;
+
+$shioyomi = ShioyomiPayload::buildIndex();
+$page_title = Site::defaultTitle();
+$page_description = Site::APP_DESCRIPTION;
+$page_canonical = Site::url('');
 include_once __DIR__ . '/header.php';
 ?>
 <style>
@@ -126,5 +135,9 @@ include_once __DIR__ . '/header.php';
         Copyright &copy; <?php echo date('Y') . ' ' . MASTER_NAME; ?>
     </div>
 </div>
+<?php echo PageEmbed::renderMachineReadableSummary($shioyomi['summary_text'], 'シオヨミ入口の要約'); ?>
+<?php echo PageEmbed::renderScriptTag($shioyomi); ?>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/webmcp.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/pwa.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 </body>
 </html>

@@ -1,0 +1,90 @@
+# シオヨミ（TideGraph）
+
+選定したスポットの潮汐・天気・風速を確認する個人向け潮見表。
+
+本番ベース URL: `https://static.sho-tsukamoto.jp/tidegraph`（末尾スラッシュ有無は同等。アプリ配下は `/tidegraph/`）
+ローカル: `http://localhost:8080/`（Docker Compose。サブパス検証時は `SHIOYOMI_BASE_PATH=/tidegraph`）
+
+## 人間向けページ
+
+- `https://static.sho-tsukamoto.jp/tidegraph/` — 場所・日付の選択
+- `https://static.sho-tsukamoto.jp/tidegraph/chart.php?place=28%269&date=YYYY-MM-DD` — 1日の潮位グラフ
+- `https://static.sho-tsukamoto.jp/tidegraph/calendar.php?place=28%269&year=YYYY&month=M` — 月間カレンダー
+
+`place` は従来どおり `都道府県コード&港コード`（URLエンコード推奨: `28%269`）。
+
+## エージェント向け JSON API
+
+すべて GET。レスポンスは `application/json`（UTF-8）。タイムゾーンは `Asia/Tokyo`。
+
+### 場所一覧
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/places.php`
+
+### 1日の潮汐・天気
+
+推奨:
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php?prefecture=28&code=9&date=2026-09-28`
+
+互換:
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php?place=28%269&date=2026-09-28`
+
+オプション:
+
+- `include_series=0` — 20分間隔の潮位時系列を省略
+
+主なフィールド: `place`, `date`, `moon`, `sun`, `flood`, `edd`, `weather`, `tide`, `summary_text`, `map_url`
+
+### 月間カレンダー
+
+推奨:
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/calendar.php?prefecture=28&code=9&year=2026&month=9`
+
+互換: `place=28%269`
+
+主なフィールド: `year`, `month`, `place`, `days[]`（`date`, `moon`, `sun`, `weather`）
+
+## ページ内マシン可読データ
+
+`chart.php` / `calendar.php` / `index.php` に次を埋め込み:
+
+- `<script type="application/json" id="shioyomi-data">...</script>`
+- `window.__SHIOYOMI__`（同一ペイロード）
+- 情報パネル付近の `aria-label` 付きテキスト要約（`.visually-hidden`）
+
+## WebMCP（ブラウザエージェント）
+
+`assets/js/webmcp.js` が Imperative API（`document.modelContext` / `navigator.modelContext`）でツールを登録する。
+
+チャート: `get_tide_summary`, `get_tide_series`, `list_places`, `get_map_link`, `set_place_and_date`  
+カレンダー: `get_month_overview`, `open_day_chart`, `list_places`  
+入口: `list_places`, `open_tide_chart`
+
+未対応ブラウザでは no-op。
+
+## PWA / SEO
+
+- `manifest.webmanifest` / `sw.js` / `assets/js/pwa.js`
+- `robots.txt` / `sitemap.xml`
+- JSON-LD（WebSite / WebApplication）、OGP、canonical（サブパス対応は `App\Support\Site`）
+
+## バックエンド MCP（任意）
+
+リポジトリの `mcp-server/` は上記 JSON API をラップする薄い stdio MCP サーバ。  
+環境変数 `SHIOYOMI_BASE_URL`（例: `https://static.sho-tsukamoto.jp/tidegraph` または `http://localhost:8080`）。
+
+## 登録港の例
+
+- 明石: prefecture=28, code=9
+- 神戸: prefecture=28, code=7
+- 米子: prefecture=31, code=1
+
+詳細一覧は `https://static.sho-tsukamoto.jp/tidegraph/api/places.php` を参照。
+
+## データ源
+
+- 潮汐: tide736.net API
+- 天気・風速: Open-Meteo

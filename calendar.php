@@ -1,48 +1,72 @@
 <?php
 
 include_once __DIR__ . "/vendor/autoload.php";
-include_once __DIR__ . '/header.php';
 
-use App\Services\CalendarService;
-use App\Services\WeatherService;
+use App\Support\PageEmbed;
+use App\Support\PlaceResolver;
+use App\Support\ShioyomiPayload;
+use App\Support\Site;
 use Carbon\Carbon;
 
 Carbon::setLocale('ja');
 
-$place = $_GET['place'] ?? null;
-$year = $_GET['year'] ?? date('Y');
-$month = $_GET['month'] ?? date('m');
+$year = (int)($_GET['year'] ?? date('Y'));
+$month = (int)($_GET['month'] ?? date('n'));
 
-if (!$place) {
-    header("Location: /");
+try {
+    if (empty($_GET['place']) && empty($_GET['prefecture'])) {
+        header('Location: ' . Site::homePath());
+        exit;
+    }
+    $placeInfo = PlaceResolver::resolve($_GET);
+    $shioyomi = ShioyomiPayload::buildCalendar($placeInfo, $year, $month);
+} catch (Exception $e) {
+    echo htmlspecialchars($e->getMessage() ?: 'データの取得に失敗しました。', ENT_QUOTES, 'UTF-8');
     exit;
 }
 
-$place_array = explode('&', $place);
-if (count($place_array) !== 2) {
-    echo "無効な場所です。";
-    exit;
+$port = $shioyomi['place']['harbor_name'];
+$prefecture = $placeInfo['prefecture'];
+$code = $placeInfo['code'];
+$place = $prefecture . '&' . $code;
+
+$page_title = sprintf('%sの潮汐カレンダー（%d年%d月）| %s', $port, $year, $month, Site::APP_NAME);
+$page_description = $shioyomi['summary_text'] ?? Site::APP_DESCRIPTION;
+$page_canonical = Site::url('calendar.php', [
+    'place' => $place,
+    'year' => $year,
+    'month' => $month,
+]);
+
+include_once __DIR__ . '/header.php';
+
+// カレンダー描画用に日別マップへ変換
+$chart = [];
+$monthly_weather = [];
+foreach ($shioyomi['days'] as $day) {
+    $chart[$day['date']] = [
+        'moon' => $day['moon'],
+        'sun' => $day['sun'],
+        'flood' => $day['flood'],
+        'edd' => $day['edd'],
+    ];
+    if (!empty($day['weather'])) {
+        $monthly_weather[$day['date']] = [
+            'icon' => match (true) {
+                ($day['weather']['label'] ?? '') === '快晴' => '☀️',
+                str_contains((string)($day['weather']['label'] ?? ''), '曇') => '⛅',
+                str_contains((string)($day['weather']['label'] ?? ''), '雨') => '☔',
+                str_contains((string)($day['weather']['label'] ?? ''), '雪') => '❄️',
+                str_contains((string)($day['weather']['label'] ?? ''), '雷') => '⛈️',
+                default => '🌤️',
+            },
+            'temp_max' => $day['weather']['temp_max'],
+            'temp_min' => $day['weather']['temp_min'],
+        ];
+    }
 }
 
-$prefecture = $place_array[0];
-$code = $place_array[1];
-
-$calendar_service = new CalendarService((int)$year, (int)$month, $prefecture, $code);
-$data = $calendar_service->get_monthly_tide_data();
-
-if ($data['status'] !== 200) {
-    echo "データの取得に失敗しました。";
-    exit;
-}
-
-$port = $data['port'];
-$chart = $data['chart'];
-
-$weather_service = new WeatherService($data['lat'], $data['lng'], '');
-$weather_response = $weather_service->get_monthly_weather_data((int)$year, (int)$month);
-$monthly_weather = $weather_response['status'] === 200 ? $weather_response['data'] : [];
-
-$firstDay = new Carbon("{$year}-{$month}-01");
+$firstDay = new Carbon(sprintf('%04d-%02d-01', $year, $month));
 $lastDay = clone $firstDay;
 $lastDay->endOfMonth();
 
@@ -54,8 +78,7 @@ $nextMonth->addMonth();
 $place_param = urlencode($place);
 $prev_url = "?place={$place_param}&year={$prevMonth->year}&month={$prevMonth->month}";
 $next_url = "?place={$place_param}&year={$nextMonth->year}&month={$nextMonth->month}";
-$map_url = "https://www.google.com/maps/search/?api=1&query={$data['lat']},{$data['lng']}";
-
+$map_url = $shioyomi['map_url'];
 function getMoonColor($title) {
     if (strpos($title, '大潮') !== false) return '#e74c3c';
     if (strpos($title, '中潮') !== false) return '#3498db';
@@ -279,7 +302,7 @@ function getMoonColor($title) {
 
 <header class="top-header">
     <div class="header-left">
-        <a href="/" class="brand">シオヨミ <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem; font-weight: normal;">自分専用の潮汐・天気・風速確認ツール</span></a>
+        <a href="<?php echo htmlspecialchars(Site::homePath(), ENT_QUOTES, 'UTF-8'); ?>" class="brand"><?php echo htmlspecialchars(Site::APP_NAME, ENT_QUOTES, 'UTF-8'); ?> <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem; font-weight: normal;">自分専用の潮汐・天気・風速確認ツール</span></a>
     </div>
     
     <div class="header-center">
@@ -295,6 +318,7 @@ function getMoonColor($title) {
 
 <div class="calendar-container">
     <h1 class="location-title">📍 <?php echo htmlspecialchars($port); ?></h1>
+    <?php echo PageEmbed::renderMachineReadableSummary($shioyomi['summary_text'], '月間潮汐カレンダーの要約'); ?>
 
     <div class="calendar-wrapper">
         <div class="calendar-grid">
@@ -368,5 +392,8 @@ function getMoonColor($title) {
         </div>
     </div>
 </div>
+<?php echo PageEmbed::renderScriptTag($shioyomi); ?>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/webmcp.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/pwa.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 </body>
 </html>

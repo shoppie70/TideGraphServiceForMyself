@@ -34,6 +34,21 @@
 
 - 場所（プルダウン）と日付を選択して潮見表を表示する入口
 
+### 🤖 エージェント向け（JSON API / WebMCP）
+
+- `api/places.php` / `api/tide.php` / `api/calendar.php` — 機械可読 JSON
+- ページ内 `<script type="application/json" id="shioyomi-data">` と WebMCP（`assets/js/webmcp.js`）
+- `llms.txt` — エンドポイント案内
+- `mcp-server/` — JSON API をラップする薄い stdio MCP サーバ
+
+### 🔍 SEO / 📱 PWA
+
+- 共通ヘッダーで title / description / OGP / Twitter / canonical / JSON-LD / theme-color
+- `robots.txt` / `sitemap.xml` / `manifest.webmanifest` / `sw.js`
+- 本番サブパス `/tidegraph/` は `App\Support\Site` と `<base href>` で解決
+
+詳細は `llms.txt` およびプラン `docs` 側の WebMCP プランを参照。
+
 ## 登録済みスポット
 
 兵庫・鳥取・島根・岡山・香川の港を中心に 20 箇所を登録。`app/config.php` で管理。
@@ -75,7 +90,7 @@
 | 依存ライブラリ | nesbot/carbon（日付操作）               |
 | チャート描画   | Chart.js 2.7                            |
 | コンテナ       | Docker / docker-compose（Apache + PHP） |
-| ホスティング   | Xserver                                 |
+| ホスティング   | スターサーバー（star8） / `static.sho-tsukamoto.jp/tidegraph` |
 
 ## 外部 API
 
@@ -114,6 +129,10 @@ docker-compose up -d
 
 # http://localhost:8080 でアクセス
 ```
+
+## 本番デプロイ
+
+`main` へのマージで GitHub Actions が FTPS デプロイします。手順と必要な Secrets は [`DEPLOY.md`](./DEPLOY.md) を参照。
 
 ## ライセンス
 

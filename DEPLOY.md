@@ -49,7 +49,7 @@ Environment **`production`**（推奨）または Repository Secrets:
 
 | Name | 説明 | 既定 |
 | ---- | ---- | ---- |
-| `DEPLOY_REMOTE_DIR` | リモートパス | `/sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/` |
+| `DEPLOY_REMOTE_DIR` | リモートパス | `sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/` |
 | `SSH_PORT` | SSH ポート | `10022` |
 | `PROD_BASE_URL` | スモーク URL | `https://static.sho-tsukamoto.jp/tidegraph` |
 | `ENABLE_AUTO_DEPLOY` | main push で本番デプロイ | 未設定＝しない |
