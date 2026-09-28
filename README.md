@@ -90,7 +90,7 @@
 | 依存ライブラリ | nesbot/carbon（日付操作）               |
 | チャート描画   | Chart.js 2.7                            |
 | コンテナ       | Docker / docker-compose（Apache + PHP） |
-| ホスティング   | Xserver                                 |
+| ホスティング   | スターサーバー（star8） / `static.sho-tsukamoto.jp/tidegraph` |
 
 ## 外部 API
 
@@ -129,6 +129,10 @@ docker-compose up -d
 
 # http://localhost:8080 でアクセス
 ```
+
+## 本番デプロイ
+
+`main` へのマージで GitHub Actions が FTPS デプロイします。手順と必要な Secrets は [`DEPLOY.md`](./DEPLOY.md) を参照。
 
 ## ライセンス
 
