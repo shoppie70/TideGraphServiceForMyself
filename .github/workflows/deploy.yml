@@ -30,7 +30,8 @@ permissions:
   contents: read
 
 env:
-  DEFAULT_REMOTE_DIR: /sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
+  # FTP 表記の先頭 / はアカウントホーム相対。SSH/rsync では先頭スラッシュ無しが正しい。
+  DEFAULT_REMOTE_DIR: sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
   DEFAULT_PROD_BASE: https://static.sho-tsukamoto.jp/tidegraph
   DEFAULT_SSH_PORT: "10022"
 
@@ -118,6 +119,8 @@ jobs:
             */) ;;
             *) dir="${dir}/" ;;
           esac
+          # SSH では先頭 / をホーム相対に正規化
+          dir="${dir#/}"
           if [ -n "${{ vars.SSH_PORT }}" ]; then
             port="${{ vars.SSH_PORT }}"
           else
@@ -153,6 +156,21 @@ jobs:
             echo "::warning::ssh-keyscan failed; trying StrictHostKeyChecking=accept-new on connect"
           }
 
+      - name: Ensure remote directory exists
+        if: ${{ steps.remote.outputs.dry_run != 'true' }}
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          REMOTE_DIR: ${{ steps.remote.outputs.dir }}
+          SSH_PORT: ${{ steps.remote.outputs.port }}
+        run: |
+          set -euo pipefail
+          # 先頭 / は OS ルート扱いになるため除去（スターサーバー FTP パス互換）
+          dir="${REMOTE_DIR#/}"
+          ssh -p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=30 \
+            "${SSH_USERNAME}@${SSH_HOST}" \
+            "mkdir -p -- '${dir}' && test -d '${dir}' && echo 'remote dir ready'"
+
       - name: Deploy via rsync over SSH
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -162,6 +180,7 @@ jobs:
           DRY_RUN: ${{ steps.remote.outputs.dry_run }}
         run: |
           set -euo pipefail
+          dir="${REMOTE_DIR#/}"
           RSYNC_FLAGS=(-az --delete --omit-dir-times --no-perms --no-owner --no-group)
           if [ "$DRY_RUN" = "true" ]; then
             RSYNC_FLAGS+=(--dry-run --itemize-changes)
@@ -172,7 +191,7 @@ jobs:
           rsync "${RSYNC_FLAGS[@]}" \
             -e "ssh -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=30" \
             .deploy/ \
-            "${SSH_USERNAME}@${SSH_HOST}:${REMOTE_DIR}"
+            "${SSH_USERNAME}@${SSH_HOST}:${dir}"
           echo "rsync finished (dry_run=${DRY_RUN})"
 
       - name: Smoke check (production)
