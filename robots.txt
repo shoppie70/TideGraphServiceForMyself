@@ -2,4 +2,13 @@
 User-agent: *
 Allow: /
 
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
 Sitemap: https://static.sho-tsukamoto.jp/tidegraph/sitemap.xml

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\HttpClient;
 use Exception;
 
 class CalendarService
@@ -31,7 +32,7 @@ class CalendarService
             'hc' => $this->code
         ]);
 
-        $json_data = @file_get_contents($this->base_uri . '?' . $query1);
+        $json_data = HttpClient::get($this->base_uri . '?' . $query1, 5);
         if (!$json_data) {
             return ['status' => 400];
         }
@@ -55,7 +56,7 @@ class CalendarService
                 'pc' => $this->prefecture,
                 'hc' => $this->code
             ]);
-            $json_data2 = @file_get_contents($this->base_uri . '?' . $query2);
+            $json_data2 = HttpClient::get($this->base_uri . '?' . $query2, 5);
             if ($json_data2) {
                 $array2 = json_decode($json_data2, true);
                 if (isset($array2['tide']['chart'])) {

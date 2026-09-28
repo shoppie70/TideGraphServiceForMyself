@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\HttpClient;
 use Exception;
 
 class TideGraphService
@@ -29,12 +30,20 @@ class TideGraphService
 
     public function get_json_data(): void
     {
-        $api_url         = $this->base_uri . $this->query;
-        $this->json_data = file_get_contents($api_url);
+        $api_url = $this->base_uri . $this->query;
+        $this->json_data = HttpClient::get($api_url, 5) ?? '';
     }
 
     public function get_tide_data_array(): array
     {
+        if ($this->json_data === '') {
+            return [
+                'status'  => 400,
+                'data'    => [],
+                'message' => '潮汐上流 API（tide736）への接続に失敗しました。',
+            ];
+        }
+
         try {
             $array = json_decode($this->json_data, $associative = true, $depth = 512, JSON_THROW_ON_ERROR);
         } catch (Exception $e) {

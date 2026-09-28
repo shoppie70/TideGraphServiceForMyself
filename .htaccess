@@ -3,3 +3,13 @@ DirectoryIndex index.php index.html
 
 AddType application/manifest+json .webmanifest
 AddType text/cache-manifest .appcache
+
+# エージェント向け: クエリ無しのパス形式を PHP に渡す（Apache 配下のとき）
+# 例: /tidegraph/api/tide/32/9/2026-10-11.json → api/tide.php/32/9/2026-10-11.json
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/tide/(.+)$ api/tide.php/$1 [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/calendar/(.+)$ api/calendar.php/$1 [L,QSA]
