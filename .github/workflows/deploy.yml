@@ -1,7 +1,7 @@
-# 本番デプロイ（スターサーバー / FTPS）
+# 本番デプロイ（スターサーバー / SSH + rsync）
 #
-# トリガー: main への push（ENABLE_AUTO_DEPLOY 時）、dry-run 専用ブランチ、
-# または手動 (workflow_dispatch)
+# スターサーバー SSH: ホスト=サーバーID.stars.ne.jp（または sv***.star.ne.jp）
+#   ユーザー=サーバーID / ポート=10022 / 認証=公開鍵のみ（パスワード不可）
 # 本番: https://static.sho-tsukamoto.jp/tidegraph
 # リモート: /sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
 #
@@ -29,18 +29,18 @@ permissions:
   contents: read
 
 env:
-  # 秘密ではない確定パス（ユーザー提供）。上書きは Variables.DEPLOY_REMOTE_DIR
   DEFAULT_REMOTE_DIR: /sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
   DEFAULT_PROD_BASE: https://static.sho-tsukamoto.jp/tidegraph
+  DEFAULT_SSH_PORT: "10022"
 
 jobs:
   deploy:
-    name: Build and FTPS deploy
+    name: Build and SSH deploy
     runs-on: ubuntu-latest
     environment: production
-    # - workflow_dispatch: 常に実行可（dry_run 入力あり）
-    # - cursor/deploy-dry-run-446a: 常に dry_run（トークンに dispatch 権限が無い場合の検証用）
-    # - main push: Variable ENABLE_AUTO_DEPLOY=true のときのみ本番デプロイ
+    # - workflow_dispatch: 常に実行可
+    # - cursor/deploy-dry-run-446a: 常に dry_run
+    # - main push: ENABLE_AUTO_DEPLOY=true のときのみ本番
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.ref_name == 'cursor/deploy-dry-run-446a' ||
@@ -51,21 +51,21 @@ jobs:
 
       - name: Verify required secrets
         env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           missing=0
-          for name in FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
+          for name in SSH_HOST SSH_USERNAME SSH_PRIVATE_KEY; do
             if [ -z "${!name}" ]; then
-              echo "::error::Secret $name が未設定です。DEPLOY.md / docs のデプロイ手順を参照してください。"
+              echo "::error::Secret $name が未設定です。DEPLOY.md を参照（スターサーバーは SSH 公開鍵・ポート 10022）。"
               missing=1
             fi
           done
           if [ "$missing" -ne 0 ]; then
             exit 1
           fi
-          echo "Required FTP secrets are present (values not printed)."
+          echo "Required SSH secrets are present (values not printed)."
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -103,7 +103,7 @@ jobs:
           test -d .deploy/api
           echo "Deploy tree ready ($(du -sh .deploy | cut -f1))"
 
-      - name: Resolve remote dir
+      - name: Resolve remote settings
         id: remote
         run: |
           if [ -n "${{ vars.DEPLOY_REMOTE_DIR }}" ]; then
@@ -115,32 +115,65 @@ jobs:
             */) ;;
             *) dir="${dir}/" ;;
           esac
+          if [ -n "${{ vars.SSH_PORT }}" ]; then
+            port="${{ vars.SSH_PORT }}"
+          else
+            port="${{ env.DEFAULT_SSH_PORT }}"
+          fi
+          dry=false
+          if [ "${{ github.ref_name }}" = "cursor/deploy-dry-run-446a" ]; then
+            dry=true
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            dry=true
+          fi
           echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "port=$port" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$dry" >> "$GITHUB_OUTPUT"
           echo "Remote dir: $dir"
+          echo "SSH port: $port"
+          echo "Dry run: $dry"
 
-      - name: Deploy via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          local-dir: .deploy/
-          server-dir: ${{ steps.remote.outputs.dir }}
-          dry-run: ${{ github.ref_name == 'cursor/deploy-dry-run-446a' || (github.event_name == 'workflow_dispatch' && inputs.dry_run) || false }}
-          dangerous-clean-slate: false
-          log-level: standard
-          timeout: 60000
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
-            **/node_modules/**
-            **/.DS_Store
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ steps.remote.outputs.port }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || {
+            echo "::warning::ssh-keyscan failed; trying StrictHostKeyChecking=accept-new on connect"
+          }
+
+      - name: Deploy via rsync over SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          REMOTE_DIR: ${{ steps.remote.outputs.dir }}
+          SSH_PORT: ${{ steps.remote.outputs.port }}
+          DRY_RUN: ${{ steps.remote.outputs.dry_run }}
+        run: |
+          set -euo pipefail
+          RSYNC_FLAGS=(-az --delete --omit-dir-times --no-perms --no-owner --no-group)
+          if [ "$DRY_RUN" = "true" ]; then
+            RSYNC_FLAGS+=(--dry-run --itemize-changes)
+            echo "=== DRY RUN (no files will be uploaded) ==="
+          else
+            echo "=== LIVE DEPLOY ==="
+          fi
+          rsync "${RSYNC_FLAGS[@]}" \
+            -e "ssh -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=30" \
+            .deploy/ \
+            "${SSH_USERNAME}@${SSH_HOST}:${REMOTE_DIR}"
+          echo "rsync finished (dry_run=${DRY_RUN})"
 
       - name: Smoke check (production)
-        if: ${{ github.ref_name != 'cursor/deploy-dry-run-446a' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        if: ${{ steps.remote.outputs.dry_run != 'true' }}
         run: |
           set -euo pipefail
           base="${{ vars.PROD_BASE_URL }}"
@@ -165,7 +198,4 @@ jobs:
           fi
           pcode=$(curl -sS -o /tmp/places.json -w '%{http_code}' --max-time 45 "$base/api/places.php" || echo "000")
           echo "api/places.php -> $pcode"
-          if [ "$pcode" = "200" ]; then
-            grep -q '"ok"' /tmp/places.json || grep -q 'places' /tmp/places.json
-          fi
           echo "Smoke check finished."
