@@ -36,6 +36,11 @@ jobs:
     name: Build and FTPS deploy
     runs-on: ubuntu-latest
     environment: production
+    # push での本番デプロイは Variable ENABLE_AUTO_DEPLOY=true のときのみ。
+    # workflow_dispatch（dry_run 含む）は常に実行可。
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && vars.ENABLE_AUTO_DEPLOY == 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
