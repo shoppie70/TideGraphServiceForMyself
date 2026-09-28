@@ -1,0 +1,167 @@
+# 本番デプロイ（スターサーバー / FTPS）
+#
+# トリガー: main への push、または手動 (workflow_dispatch)
+# 本番: https://static.sho-tsukamoto.jp/tidegraph
+# リモート: /sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
+#
+# 必要な Secrets は DEPLOY.md を参照。値はリポジトリに書きません。
+
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run（アップロードしない）"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # 秘密ではない確定パス（ユーザー提供）。上書きは Variables.DEPLOY_REMOTE_DIR
+  DEFAULT_REMOTE_DIR: /sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
+  DEFAULT_PROD_BASE: https://static.sho-tsukamoto.jp/tidegraph
+
+jobs:
+  deploy:
+    name: Build and FTPS deploy
+    runs-on: ubuntu-latest
+    environment: production
+    # push での本番デプロイは Variable ENABLE_AUTO_DEPLOY=true のときのみ。
+    # workflow_dispatch（dry_run 含む）は常に実行可。
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && vars.ENABLE_AUTO_DEPLOY == 'true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          missing=0
+          for name in FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name が未設定です。DEPLOY.md / docs のデプロイ手順を参照してください。"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          echo "Required FTP secrets are present (values not printed)."
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer
+          coverage: none
+
+      - name: Install Composer dependencies (CI)
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Prepare deploy tree
+        run: |
+          set -euo pipefail
+          rm -rf .deploy
+          mkdir .deploy
+          rsync -a \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.deploy/' \
+            --exclude 'mcp-server/' \
+            --exclude 'Dockerfile' \
+            --exclude 'docker-compose.yml' \
+            --exclude '.gitignore' \
+            --exclude 'DEPLOY.md' \
+            --exclude '.DS_Store' \
+            --exclude '*.md' \
+            ./ .deploy/
+          cp -f composer.lock .deploy/composer.lock
+          test -f .deploy/vendor/autoload.php
+          test -f .deploy/index.php
+          test -f .deploy/llms.txt
+          test -f .deploy/manifest.webmanifest
+          test -f .deploy/assets/js/webmcp.js
+          test -d .deploy/api
+          echo "Deploy tree ready ($(du -sh .deploy | cut -f1))"
+
+      - name: Resolve remote dir
+        id: remote
+        run: |
+          if [ -n "${{ vars.DEPLOY_REMOTE_DIR }}" ]; then
+            dir="${{ vars.DEPLOY_REMOTE_DIR }}"
+          else
+            dir="${{ env.DEFAULT_REMOTE_DIR }}"
+          fi
+          case "$dir" in
+            */) ;;
+            *) dir="${dir}/" ;;
+          esac
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "Remote dir: $dir"
+
+      - name: Deploy via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: .deploy/
+          server-dir: ${{ steps.remote.outputs.dir }}
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+          dangerous-clean-slate: false
+          log-level: standard
+          timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/.DS_Store
+
+      - name: Smoke check (production)
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        run: |
+          set -euo pipefail
+          base="${{ vars.PROD_BASE_URL }}"
+          if [ -z "$base" ]; then
+            base="${{ env.DEFAULT_PROD_BASE }}"
+          fi
+          base="${base%/}"
+          echo "Checking $base ..."
+          code=$(curl -sS -o /tmp/prod_index.html -w '%{http_code}' --max-time 45 "$base/")
+          echo "GET / -> $code"
+          test "$code" = "200"
+          grep -q 'シオヨミ' /tmp/prod_index.html
+          if grep -q 'manifest.webmanifest' /tmp/prod_index.html; then
+            mcode=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$base/manifest.webmanifest")
+            echo "manifest -> $mcode"
+            test "$mcode" = "200"
+          fi
+          if grep -q 'webmcp.js' /tmp/prod_index.html; then
+            wcode=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$base/assets/js/webmcp.js")
+            echo "webmcp.js -> $wcode"
+            test "$wcode" = "200"
+          fi
+          pcode=$(curl -sS -o /tmp/places.json -w '%{http_code}' --max-time 45 "$base/api/places.php" || echo "000")
+          echo "api/places.php -> $pcode"
+          if [ "$pcode" = "200" ]; then
+            grep -q '"ok"' /tmp/places.json || grep -q 'places' /tmp/places.json
+          fi
+          echo "Smoke check finished."
