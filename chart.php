@@ -2,29 +2,85 @@
 
 include_once __DIR__ . "/vendor/autoload.php";
 
-use App\UseCases\Date\GetRequestDateAction;
-use App\Requests\TideGraphRequest;
+use App\Support\PageEmbed;
+use App\Support\PlaceResolver;
+use App\Support\ShioyomiPayload;
 use Carbon\Carbon;
-use App\Services\TideGraphService;
-use App\Services\WeatherService;
 
 Carbon::setLocale('ja');
 
 try {
-    $request         = (new TideGraphRequest($_REQUEST))();
-    $date            = (new GetRequestDateAction())($request);
-    $tide_data       = (new TideGraphService($request['year'], $request['month'], $request['date'], $request['prefecture'], $request['code']));
-    $tide_data_array = $tide_data->get_tide_data_array();
-
-    if ($tide_data_array['status'] !== 200) {
-        throw new \RuntimeException('データの取得に失敗しました。');
+    // 既存 UI: place=28%269 / 推奨 API 互換: prefecture+code
+    if (empty($_REQUEST['place']) && !empty($_REQUEST['prefecture']) && !empty($_REQUEST['code'])) {
+        $_REQUEST['place'] = $_REQUEST['prefecture'] . '&' . $_REQUEST['code'];
+        $_GET['place'] = $_REQUEST['place'];
     }
 
-    $weather_service = new WeatherService($tide_data_array['lat'], $tide_data_array['lng'], $date->format('Y-m-d'));
-    $weather_data = $weather_service->get_weather_data();
+    $place = PlaceResolver::resolve($_REQUEST);
 
+    if (isset($_REQUEST['year'], $_REQUEST['month'], $_REQUEST['date'])
+        && ctype_digit((string)$_REQUEST['year'])
+        && ctype_digit((string)$_REQUEST['month'])
+        && ctype_digit((string)$_REQUEST['date'])
+        && strlen((string)$_REQUEST['date']) <= 2) {
+        $date = Carbon::create(
+            (int)$_REQUEST['year'],
+            (int)$_REQUEST['month'],
+            (int)$_REQUEST['date'],
+            0,
+            0,
+            0,
+            ShioyomiPayload::TIMEZONE
+        );
+    } elseif (!empty($_REQUEST['date'])) {
+        $date = ShioyomiPayload::parseDate((string)$_REQUEST['date']);
+    } else {
+        throw new InvalidArgumentException('日時が送信されていません。');
+    }
+
+    $shioyomi = ShioyomiPayload::buildTide($place, $date, true);
+    $tide_data_array = [
+        'status' => 200,
+        'tide' => $shioyomi['tide'],
+        'sun' => $shioyomi['sun'],
+        'edd' => $shioyomi['edd'],
+        'flood' => $shioyomi['flood'],
+        'moon' => $shioyomi['moon'],
+        'port' => $shioyomi['place']['harbor_name'],
+        'lat' => $shioyomi['place']['lat'],
+        'lng' => $shioyomi['place']['lng'],
+    ];
+    $weather_data = [
+        'status' => $shioyomi['weather'] ? 200 : 400,
+        'label' => $shioyomi['weather']['label'] ?? null,
+        'icon' => null,
+        'temp_max' => $shioyomi['weather']['temp_max'] ?? null,
+        'temp_min' => $shioyomi['weather']['temp_min'] ?? null,
+        'wind_speed' => $shioyomi['weather']['wind_speed_ms'] ?? [],
+    ];
+
+    // 天気アイコンは WeatherService 側の表示用。ラベルから簡易復元
+    if ($weather_data['status'] === 200) {
+        $weather_data['icon'] = match (true) {
+            ($weather_data['label'] ?? '') === '快晴' => '☀️',
+            str_contains((string)$weather_data['label'], '曇') => '⛅',
+            str_contains((string)$weather_data['label'], '雨') => '☔',
+            str_contains((string)$weather_data['label'], '雪') => '❄️',
+            str_contains((string)$weather_data['label'], '雷') => '⛈️',
+            str_contains((string)$weather_data['label'], '霧') => '🌫️',
+            default => '🌤️',
+        };
+    }
+
+    $request = [
+        'year' => (int)$date->year,
+        'month' => (int)$date->month,
+        'date' => (int)$date->day,
+        'prefecture' => $place['prefecture'],
+        'code' => $place['code'],
+    ];
 } catch (Exception $e) {
-    echo $e->getMessage();
+    echo htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
     exit;
 }
 
@@ -37,7 +93,7 @@ $next_date = $date->copy()->addDay()->format('Y-m-d');
 $prev_url = "?place={$place_param}&date={$prev_date}";
 $next_url = "?place={$place_param}&date={$next_date}";
 $calendar_url = "calendar.php?place={$place_param}&year={$request['year']}&month={$request['month']}";
-$map_url = "https://www.google.com/maps/search/?api=1&query={$tide_data_array['lat']},{$tide_data_array['lng']}";
+$map_url = $shioyomi['map_url'];
 
 ?>
 <style>
@@ -212,10 +268,10 @@ $map_url = "https://www.google.com/maps/search/?api=1&query={$tide_data_array['l
     <div class="header-center">
         <form action="chart.php" method="GET" style="display: flex; gap: 0.5rem; margin: 0; align-items: center;">
             <select class="form-control" name="place" onchange="this.form.submit()">
-                <?php foreach (PLACES as $place): ?>
-                    <?php $val = $place['prefecture'] . '&' . $place['code']; ?>
+                <?php foreach (PLACES as $p): ?>
+                    <?php $val = $p['prefecture'] . '&' . $p['code']; ?>
                     <option value="<?php echo $val; ?>" <?php if ($val === $current_place_val) echo 'selected'; ?>>
-                        <?php echo htmlspecialchars($place['name']); ?>
+                        <?php echo htmlspecialchars($p['name']); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -229,7 +285,7 @@ $map_url = "https://www.google.com/maps/search/?api=1&query={$tide_data_array['l
     <div class="header-right">
         <?php if ($weather_data['status'] === 200): ?>
         <div class="weather-badge">
-            <?php echo $weather_data['icon']; ?> <?php echo $weather_data['label']; ?> 
+            <?php echo $weather_data['icon']; ?> <?php echo htmlspecialchars((string)$weather_data['label']); ?> 
             <span style="color: #e74c3c; margin-left: 0.4rem;">H:<?php echo $weather_data['temp_max']; ?>°</span>
             <span style="color: #3498db; margin-left: 0.3rem;">L:<?php echo $weather_data['temp_min']; ?>°</span>
         </div>
@@ -243,14 +299,15 @@ $map_url = "https://www.google.com/maps/search/?api=1&query={$tide_data_array['l
         <canvas id="chart"></canvas>
     </div>
 
-    <div class="tide-info-panel">
+    <section class="tide-info-panel" aria-label="潮汐情報">
+        <?php echo PageEmbed::renderMachineReadableSummary($shioyomi['summary_text'], '潮汐情報の要約'); ?>
         <dl class="info-dl">
             <dt class="info-dt">潮回り</dt>
-            <dd class="info-dd" style="color: #2980b9;"><?php echo htmlspecialchars($tide_data_array['moon']['title']); ?></dd>
+            <dd class="info-dd" style="color: #2980b9;"><?php echo htmlspecialchars($tide_data_array['moon']['title'] ?? ''); ?></dd>
         </dl>
         <dl class="info-dl">
             <dt class="info-dt">日の出</dt>
-            <dd class="info-dd"><?php echo htmlspecialchars($tide_data_array['sun']['rise']); ?></dd>
+            <dd class="info-dd"><?php echo htmlspecialchars($tide_data_array['sun']['rise'] ?? ''); ?></dd>
         </dl>
         <dl class="info-dl">
             <dt class="info-dt">日の入</dt>
@@ -280,10 +337,12 @@ $map_url = "https://www.google.com/maps/search/?api=1&query={$tide_data_array['l
                 ?>
             </dd>
         </dl>
-    </div>
+    </section>
 </div>
 
+<?php echo PageEmbed::renderScriptTag($shioyomi); ?>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/webmcp.js"></script>
 <script>
     const tide_data = <?php echo json_encode($tide_data_array['tide'], JSON_THROW_ON_ERROR); ?>;
     const wind_speed = <?php echo json_encode($weather_data['wind_speed'] ?? [], JSON_THROW_ON_ERROR); ?>;

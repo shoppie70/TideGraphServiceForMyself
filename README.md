@@ -34,6 +34,15 @@
 
 - 場所（プルダウン）と日付を選択して潮見表を表示する入口
 
+### 🤖 エージェント向け（JSON API / WebMCP）
+
+- `api/places.php` / `api/tide.php` / `api/calendar.php` — 機械可読 JSON
+- ページ内 `<script type="application/json" id="shioyomi-data">` と WebMCP（`assets/js/webmcp.js`）
+- `llms.txt` — エンドポイント案内
+- `mcp-server/` — JSON API をラップする薄い stdio MCP サーバ
+
+詳細は `llms.txt` およびプラン `docs` 側の WebMCP プランを参照。
+
 ## 登録済みスポット
 
 兵庫・鳥取・島根・岡山・香川の港を中心に 20 箇所を登録。`app/config.php` で管理。

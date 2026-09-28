@@ -1,5 +1,10 @@
 <?php
 include_once __DIR__ . "/vendor/autoload.php";
+
+use App\Support\PageEmbed;
+use App\Support\ShioyomiPayload;
+
+$shioyomi = ShioyomiPayload::buildIndex();
 include_once __DIR__ . '/header.php';
 ?>
 <style>
@@ -126,5 +131,8 @@ include_once __DIR__ . '/header.php';
         Copyright &copy; <?php echo date('Y') . ' ' . MASTER_NAME; ?>
     </div>
 </div>
+<?php echo PageEmbed::renderMachineReadableSummary($shioyomi['summary_text'], 'シオヨミ入口の要約'); ?>
+<?php echo PageEmbed::renderScriptTag($shioyomi); ?>
+<script src="assets/js/webmcp.js"></script>
 </body>
 </html>
