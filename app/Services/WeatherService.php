@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Support\HttpClient;
+
 class WeatherService
 {
     private string $base_uri = "https://api.open-meteo.com/v1/forecast";
@@ -30,7 +32,7 @@ class WeatherService
         ]);
 
         $api_url = $this->base_uri . '?' . $query;
-        $json_data = @file_get_contents($api_url);
+        $json_data = HttpClient::get($api_url, 4);
 
         if (!$json_data) {
             return [
@@ -96,7 +98,7 @@ class WeatherService
         ]);
 
         $api_url = $this->base_uri . '?' . $query;
-        $json_data = @file_get_contents($api_url);
+        $json_data = HttpClient::get($api_url, 4);
 
         if (!$json_data) {
             return ['status' => 400, 'message' => 'Weather API error'];

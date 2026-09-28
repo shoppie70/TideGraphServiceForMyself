@@ -16,36 +16,63 @@
 ## エージェント向け JSON API
 
 すべて GET。レスポンスは `application/json`（UTF-8）。タイムゾーンは `Asia/Tokyo`。
+エラー時も常に JSON（`{"ok":false,"error":"..."}`）。
 
-### 場所一覧
+### 場所一覧（クエリ無し・確実）
 
 `GET https://static.sho-tsukamoto.jp/tidegraph/api/places.php`
 
-### 1日の潮汐・天気
+### 1日の潮汐・天気（ChatGPT 推奨: クエリ無し PATH）
 
-推奨:
+ChatGPT の Web 取得はクエリ付き URL（`?prefecture=...`）を弾く事例がある。**パス形式を使うこと。**
+
+推奨（JSON・20分刻み series 込み）:
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php/32/9/2026-10-11`
+
+または明示拡張子:
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php/32/9/2026-10-11.json`
+
+text/plain（llms.txt と同様に通しやすい）:
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php/32/9/2026-10-11.txt`
+
+series 省略（サマリのみ）:
+
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php/32/9/2026-10-11/summary`
+
+互換クエリ形式（ブラウザ・自前スクリプト向け）:
 
 `GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php?prefecture=28&code=9&date=2026-09-28`
 
-互換:
-
 `GET https://static.sho-tsukamoto.jp/tidegraph/api/tide.php?place=28%269&date=2026-09-28`
 
-オプション:
+オプション（クエリ時）:
 
 - `include_series=0` — 20分間隔の潮位時系列を省略
+- `include_weather=0` — 天気取得を省略（上流待ち時間短縮）
+- `include_places=1` — 登録港一覧をペイロードに含める（既定は API では省略）
 
 主なフィールド: `place`, `date`, `moon`, `sun`, `flood`, `edd`, `weather`, `tide`, `summary_text`, `map_url`
 
-### 月間カレンダー
+### 月間カレンダー（同様にパス形式推奨）
 
-推奨:
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/calendar.php/32/9/2026/10`
 
-`GET https://static.sho-tsukamoto.jp/tidegraph/api/calendar.php?prefecture=28&code=9&year=2026&month=9`
+`GET https://static.sho-tsukamoto.jp/tidegraph/api/calendar.php/32/9/2026/10.txt`
 
-互換: `place=28%269`
+互換: `?prefecture=28&code=9&year=2026&month=9` / `place=28%269`
 
 主なフィールド: `year`, `month`, `place`, `days[]`（`date`, `moon`, `sun`, `weather`）
+
+### ChatGPT での確認手順
+
+1. まず `https://static.sho-tsukamoto.jp/tidegraph/llms.txt` を読ませる
+2. 続けてパス形式を指定する（例）:
+   - 「`https://static.sho-tsukamoto.jp/tidegraph/api/tide.php/32/9/2026-10-11` を取得して七類の潮汐を要約して。`tide` 配列（20分刻み）の件数も教えて」
+3. クエリ付き URL が失敗したら、必ずパス形式（または `.txt`）に切り替える
+4. 期待結果の例（七類 / 2026-10-11）: 大潮、満潮おおよそ 01:51 と 14:27、干潮おおよそ 08:25 と 20:34、`tide` は約 73 点
 
 ## ページ内マシン可読データ
 
@@ -81,6 +108,7 @@
 - 明石: prefecture=28, code=9
 - 神戸: prefecture=28, code=7
 - 米子: prefecture=31, code=1
+- 七類: prefecture=32, code=9
 
 詳細一覧は `https://static.sho-tsukamoto.jp/tidegraph/api/places.php` を参照。
 

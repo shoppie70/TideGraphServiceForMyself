@@ -37,8 +37,11 @@
 ### 🤖 エージェント向け（JSON API / WebMCP）
 
 - `api/places.php` / `api/tide.php` / `api/calendar.php` — 機械可読 JSON
+- **ChatGPT 向けはクエリ無しパス**を推奨:  
+  `api/tide.php/{prefecture}/{code}/{YYYY-MM-DD}`（`.json` / `.txt` 可、20分刻み `tide` series 込み）  
+  `api/calendar.php/{prefecture}/{code}/{year}/{month}`
 - ページ内 `<script type="application/json" id="shioyomi-data">` と WebMCP（`assets/js/webmcp.js`）
-- `llms.txt` — エンドポイント案内
+- `llms.txt` — エンドポイント案内と ChatGPT 確認手順
 - `mcp-server/` — JSON API をラップする薄い stdio MCP サーバ
 
 ### 🔍 SEO / 📱 PWA

@@ -16,9 +16,19 @@ class ShioyomiPayload
 
     /**
      * @param array{name: string, prefecture: string, code: string} $place
+     * @param array{include_series?: bool, include_weather?: bool, include_places?: bool} $options
      */
-    public static function buildTide(array $place, Carbon $date, bool $includeSeries = true): array
+    public static function buildTide(array $place, Carbon $date, bool|array $includeSeries = true, array $options = []): array
     {
+        // 後方互換: 第3引数が bool の場合は include_series
+        if (is_array($includeSeries)) {
+            $options = $includeSeries;
+            $includeSeries = $options['include_series'] ?? true;
+        }
+
+        $includeWeather = $options['include_weather'] ?? true;
+        $includePlaces = $options['include_places'] ?? true;
+
         $tideService = new TideGraphService(
             (int)$date->year,
             (int)$date->month,
@@ -32,8 +42,11 @@ class ShioyomiPayload
             throw new \RuntimeException($tide['message'] ?? '潮汐データの取得に失敗しました。');
         }
 
-        $weatherService = new WeatherService($tide['lat'], $tide['lng'], $date->format('Y-m-d'));
-        $weather = $weatherService->get_weather_data();
+        $weather = ['status' => 400];
+        if ($includeWeather) {
+            $weatherService = new WeatherService($tide['lat'], $tide['lng'], $date->format('Y-m-d'));
+            $weather = $weatherService->get_weather_data();
+        }
 
         $payload = [
             'ok' => true,
@@ -66,8 +79,11 @@ class ShioyomiPayload
                 $tide['lng']
             ),
             'summary_text' => '',
-            'places' => PlaceResolver::all(),
         ];
+
+        if ($includePlaces) {
+            $payload['places'] = PlaceResolver::all();
+        }
 
         if ($includeSeries) {
             $payload['tide'] = array_map(static function ($point): array {
@@ -85,9 +101,13 @@ class ShioyomiPayload
 
     /**
      * @param array{name: string, prefecture: string, code: string} $place
+     * @param array{include_weather?: bool, include_places?: bool} $options
      */
-    public static function buildCalendar(array $place, int $year, int $month): array
+    public static function buildCalendar(array $place, int $year, int $month, array $options = []): array
     {
+        $includeWeather = $options['include_weather'] ?? true;
+        $includePlaces = $options['include_places'] ?? true;
+
         $calendarService = new CalendarService($year, $month, $place['prefecture'], $place['code']);
         $data = $calendarService->get_monthly_tide_data();
 
@@ -95,9 +115,12 @@ class ShioyomiPayload
             throw new \RuntimeException('カレンダーデータの取得に失敗しました。');
         }
 
-        $weatherService = new WeatherService($data['lat'], $data['lng'], '');
-        $weatherResponse = $weatherService->get_monthly_weather_data($year, $month);
-        $monthlyWeather = ($weatherResponse['status'] ?? 400) === 200 ? ($weatherResponse['data'] ?? []) : [];
+        $monthlyWeather = [];
+        if ($includeWeather) {
+            $weatherService = new WeatherService($data['lat'], $data['lng'], '');
+            $weatherResponse = $weatherService->get_monthly_weather_data($year, $month);
+            $monthlyWeather = ($weatherResponse['status'] ?? 400) === 200 ? ($weatherResponse['data'] ?? []) : [];
+        }
 
         $days = [];
         foreach ($data['chart'] as $dateStr => $dayData) {
@@ -143,8 +166,11 @@ class ShioyomiPayload
                 $data['lat'],
                 $data['lng']
             ),
-            'places' => PlaceResolver::all(),
         ];
+
+        if ($includePlaces) {
+            $payload['places'] = PlaceResolver::all();
+        }
 
         $payload['summary_text'] = sprintf(
             '%s（都道府県コード %s / 港コード %s）の %d年%d月の潮回りカレンダー。日数 %d。',

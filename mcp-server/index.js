@@ -101,6 +101,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return toolText(await fetchJson("api/places.php"));
     }
     if (name === "get_tide") {
+      if (args.prefecture && args.code) {
+        const date = args.date || new Date().toISOString().slice(0, 10);
+        let path = `api/tide.php/${encodeURIComponent(args.prefecture)}/${encodeURIComponent(args.code)}/${encodeURIComponent(date)}`;
+        if (args.include_series === false) {
+          path += "/summary";
+        }
+        return toolText(await fetchJson(path));
+      }
       const query = {
         prefecture: args.prefecture,
         code: args.code,
@@ -113,6 +121,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return toolText(await fetchJson("api/tide.php", query));
     }
     if (name === "get_calendar") {
+      if (args.prefecture && args.code && args.year && args.month) {
+        const path = `api/calendar.php/${encodeURIComponent(args.prefecture)}/${encodeURIComponent(args.code)}/${encodeURIComponent(args.year)}/${encodeURIComponent(args.month)}`;
+        return toolText(await fetchJson(path));
+      }
       return toolText(
         await fetchJson("api/calendar.php", {
           prefecture: args.prefecture,
