@@ -1,0 +1,5 @@
+RewriteEngine On
+DirectoryIndex index.php index.html
+
+AddType application/manifest+json .webmanifest
+AddType text/cache-manifest .appcache

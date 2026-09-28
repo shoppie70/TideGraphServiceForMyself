@@ -5,6 +5,7 @@ include_once __DIR__ . "/vendor/autoload.php";
 use App\Support\PageEmbed;
 use App\Support\PlaceResolver;
 use App\Support\ShioyomiPayload;
+use App\Support\Site;
 use Carbon\Carbon;
 
 Carbon::setLocale('ja');
@@ -84,8 +85,6 @@ try {
     exit;
 }
 
-include_once __DIR__ . '/header.php';
-
 $current_place_val = $request['prefecture'] . '&' . $request['code'];
 $place_param = urlencode($current_place_val);
 $prev_date = $date->copy()->subDay()->format('Y-m-d');
@@ -94,6 +93,21 @@ $prev_url = "?place={$place_param}&date={$prev_date}";
 $next_url = "?place={$place_param}&date={$next_date}";
 $calendar_url = "calendar.php?place={$place_param}&year={$request['year']}&month={$request['month']}";
 $map_url = $shioyomi['map_url'];
+$date_str = $date->format('Y-m-d');
+
+$page_title = sprintf(
+    '%sの潮見表（%s）| %s',
+    $shioyomi['place']['harbor_name'] ?? $place['name'],
+    $date_str,
+    Site::APP_NAME
+);
+$page_description = $shioyomi['summary_text'] ?? Site::APP_DESCRIPTION;
+$page_canonical = Site::url('chart.php', [
+    'place' => $current_place_val,
+    'date' => $date_str,
+]);
+
+include_once __DIR__ . '/header.php';
 
 ?>
 <style>
@@ -262,7 +276,7 @@ $map_url = $shioyomi['map_url'];
 
 <header class="top-header">
     <div class="header-left">
-        <a href="/" class="brand">シオヨミ <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem; font-weight: normal;">自分専用の潮汐・天気・風速確認ツール</span></a>
+        <a href="<?php echo htmlspecialchars(Site::homePath(), ENT_QUOTES, 'UTF-8'); ?>" class="brand"><?php echo htmlspecialchars(Site::APP_NAME, ENT_QUOTES, 'UTF-8'); ?> <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem; font-weight: normal;">自分専用の潮汐・天気・風速確認ツール</span></a>
     </div>
     
     <div class="header-center">
@@ -341,8 +355,9 @@ $map_url = $shioyomi['map_url'];
 </div>
 
 <?php echo PageEmbed::renderScriptTag($shioyomi); ?>
-<script src="assets/js/app.js"></script>
-<script src="assets/js/webmcp.js"></script>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/app.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/webmcp.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/pwa.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
     const tide_data = <?php echo json_encode($tide_data_array['tide'], JSON_THROW_ON_ERROR); ?>;
     const wind_speed = <?php echo json_encode($weather_data['wind_speed'] ?? [], JSON_THROW_ON_ERROR); ?>;

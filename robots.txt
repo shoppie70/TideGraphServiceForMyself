@@ -1,0 +1,5 @@
+# シオヨミ（本番: https://static.sho-tsukamoto.jp/tidegraph）
+User-agent: *
+Allow: /
+
+Sitemap: https://static.sho-tsukamoto.jp/tidegraph/sitemap.xml

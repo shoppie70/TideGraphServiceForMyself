@@ -41,6 +41,12 @@
 - `llms.txt` — エンドポイント案内
 - `mcp-server/` — JSON API をラップする薄い stdio MCP サーバ
 
+### 🔍 SEO / 📱 PWA
+
+- 共通ヘッダーで title / description / OGP / Twitter / canonical / JSON-LD / theme-color
+- `robots.txt` / `sitemap.xml` / `manifest.webmanifest` / `sw.js`
+- 本番サブパス `/tidegraph/` は `App\Support\Site` と `<base href>` で解決
+
 詳細は `llms.txt` およびプラン `docs` 側の WebMCP プランを参照。
 
 ## 登録済みスポット

@@ -5,6 +5,7 @@ include_once __DIR__ . "/vendor/autoload.php";
 use App\Support\PageEmbed;
 use App\Support\PlaceResolver;
 use App\Support\ShioyomiPayload;
+use App\Support\Site;
 use Carbon\Carbon;
 
 Carbon::setLocale('ja');
@@ -14,7 +15,7 @@ $month = (int)($_GET['month'] ?? date('n'));
 
 try {
     if (empty($_GET['place']) && empty($_GET['prefecture'])) {
-        header("Location: /");
+        header('Location: ' . Site::homePath());
         exit;
     }
     $placeInfo = PlaceResolver::resolve($_GET);
@@ -24,12 +25,20 @@ try {
     exit;
 }
 
-include_once __DIR__ . '/header.php';
-
 $port = $shioyomi['place']['harbor_name'];
 $prefecture = $placeInfo['prefecture'];
 $code = $placeInfo['code'];
 $place = $prefecture . '&' . $code;
+
+$page_title = sprintf('%sの潮汐カレンダー（%d年%d月）| %s', $port, $year, $month, Site::APP_NAME);
+$page_description = $shioyomi['summary_text'] ?? Site::APP_DESCRIPTION;
+$page_canonical = Site::url('calendar.php', [
+    'place' => $place,
+    'year' => $year,
+    'month' => $month,
+]);
+
+include_once __DIR__ . '/header.php';
 
 // カレンダー描画用に日別マップへ変換
 $chart = [];
@@ -293,7 +302,7 @@ function getMoonColor($title) {
 
 <header class="top-header">
     <div class="header-left">
-        <a href="/" class="brand">シオヨミ <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem; font-weight: normal;">自分専用の潮汐・天気・風速確認ツール</span></a>
+        <a href="<?php echo htmlspecialchars(Site::homePath(), ENT_QUOTES, 'UTF-8'); ?>" class="brand"><?php echo htmlspecialchars(Site::APP_NAME, ENT_QUOTES, 'UTF-8'); ?> <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem; font-weight: normal;">自分専用の潮汐・天気・風速確認ツール</span></a>
     </div>
     
     <div class="header-center">
@@ -384,6 +393,7 @@ function getMoonColor($title) {
     </div>
 </div>
 <?php echo PageEmbed::renderScriptTag($shioyomi); ?>
-<script src="assets/js/webmcp.js"></script>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/webmcp.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars(Site::path('assets/js/pwa.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 </body>
 </html>
