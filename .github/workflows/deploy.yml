@@ -1,6 +1,7 @@
 # 本番デプロイ（スターサーバー / FTPS）
 #
-# トリガー: main への push、または手動 (workflow_dispatch)
+# トリガー: main への push（ENABLE_AUTO_DEPLOY 時）、dry-run 専用ブランチ、
+# または手動 (workflow_dispatch)
 # 本番: https://static.sho-tsukamoto.jp/tidegraph
 # リモート: /sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/
 #
@@ -12,6 +13,7 @@ on:
   push:
     branches:
       - main
+      - cursor/deploy-dry-run-446a
   workflow_dispatch:
     inputs:
       dry_run:
@@ -36,11 +38,13 @@ jobs:
     name: Build and FTPS deploy
     runs-on: ubuntu-latest
     environment: production
-    # push での本番デプロイは Variable ENABLE_AUTO_DEPLOY=true のときのみ。
-    # workflow_dispatch（dry_run 含む）は常に実行可。
+    # - workflow_dispatch: 常に実行可（dry_run 入力あり）
+    # - cursor/deploy-dry-run-446a: 常に dry_run（トークンに dispatch 権限が無い場合の検証用）
+    # - main push: Variable ENABLE_AUTO_DEPLOY=true のときのみ本番デプロイ
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && vars.ENABLE_AUTO_DEPLOY == 'true')
+      github.ref_name == 'cursor/deploy-dry-run-446a' ||
+      (github.event_name == 'push' && github.ref_name == 'main' && vars.ENABLE_AUTO_DEPLOY == 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,7 +128,7 @@ jobs:
           port: 21
           local-dir: .deploy/
           server-dir: ${{ steps.remote.outputs.dir }}
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+          dry-run: ${{ github.ref_name == 'cursor/deploy-dry-run-446a' || (github.event_name == 'workflow_dispatch' && inputs.dry_run) || false }}
           dangerous-clean-slate: false
           log-level: standard
           timeout: 60000
@@ -136,7 +140,7 @@ jobs:
             **/.DS_Store
 
       - name: Smoke check (production)
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        if: ${{ github.ref_name != 'cursor/deploy-dry-run-446a' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
         run: |
           set -euo pipefail
           base="${{ vars.PROD_BASE_URL }}"
