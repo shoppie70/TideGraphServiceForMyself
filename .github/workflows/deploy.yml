@@ -14,6 +14,7 @@ on:
     branches:
       - main
       - cursor/deploy-dry-run-446a
+      - cursor/deploy-live-446a
   workflow_dispatch:
     inputs:
       dry_run:
@@ -40,10 +41,12 @@ jobs:
     environment: production
     # - workflow_dispatch: 常に実行可
     # - cursor/deploy-dry-run-446a: 常に dry_run
+    # - cursor/deploy-live-446a: 本番同期（dispatch 権限が無い場合の本番実行用）
     # - main push: ENABLE_AUTO_DEPLOY=true のときのみ本番
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.ref_name == 'cursor/deploy-dry-run-446a' ||
+      github.ref_name == 'cursor/deploy-live-446a' ||
       (github.event_name == 'push' && github.ref_name == 'main' && vars.ENABLE_AUTO_DEPLOY == 'true')
     steps:
       - name: Checkout
