@@ -41,6 +41,7 @@ Environment 名: `production`（初回実行時に GitHub が作成を促しま�
 | ---- | ---- | ---- |
 | `DEPLOY_REMOTE_DIR` | リモートパス上書き | `/sho-tsukamoto.jp/public_html/static.sho-tsukamoto.jp/tidegraph/` |
 | `PROD_BASE_URL` | デプロイ後スモークの URL | `https://static.sho-tsukamoto.jp/tidegraph` |
+| `ENABLE_AUTO_DEPLOY` | `main` push 時の自動デプロイを有効化（`true`） | 未設定＝push ではデプロイしない（手動のみ） |
 
 パスは秘密ではないためワークフロー既定に埋め込んであります。変更時だけ Variable を設定してください。
 
@@ -48,10 +49,10 @@ Environment 名: `production`（初回実行時に GitHub が作成を促しま�
 
 1. スターサーバーで **サブ FTP アカウント**を発行（ホームまたは `tidegraph` 配下に制限できるならなお良い）
 2. 上記 3 Secrets を GitHub に登録
-3. Actions → **Deploy production** → `dry_run: true` で接続・差分を確認
-4. `dry_run: false` で本番反映
+3. Actions → **Deploy production** → `dry_run: true` で接続・差分を確認（またはブランチ `cursor/deploy-dry-run-446a` への push でも dry_run）
+4. `dry_run: false` で本番反映（または Variable `ENABLE_AUTO_DEPLOY=true` 後に `main` マージ）
 5. ブラウザで https://static.sho-tsukamoto.jp/tidegraph を確認
-6. 以降は `main` マージで自動デプロイ
+6. 以降は `main` マージで自動デプロイ（`ENABLE_AUTO_DEPLOY=true` が必要）
 
 ## アップロードされるもの / されないもの
 
