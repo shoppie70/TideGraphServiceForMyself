@@ -239,73 +239,6 @@ include_once __DIR__ . '/header.php';
         font-weight: 700;
     }
 
-    .bite-score-block {
-        margin-top: 0.55rem;
-        padding-top: 0.55rem;
-        border-top: 1px solid #eee;
-        width: 100%;
-    }
-    .bite-score-title {
-        font-size: 0.72rem;
-        font-weight: 600;
-        color: #64748b;
-        margin: 0 0 0.2rem;
-    }
-    .bite-score-peak {
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: #475569;
-        margin: 0 0 0.2rem;
-    }
-    .bite-score-note {
-        font-size: 0.65rem;
-        line-height: 1.3;
-        color: #94a3b8;
-        margin: 0;
-    }
-    .bite-hour-strip {
-        display: grid;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-        gap: 2px;
-        margin-top: 0.4rem;
-    }
-    .bite-hour-cell {
-        text-align: center;
-        font-size: 0.55rem;
-        line-height: 1.15;
-        color: #64748b;
-        border-radius: 3px;
-        padding: 0.15rem 0.02rem;
-        border: 1px solid transparent;
-        background: #f8fafc;
-    }
-    .bite-hour-cell strong {
-        display: block;
-        font-size: 0.58rem;
-        font-weight: 600;
-        color: #64748b;
-    }
-    .bite-hour-cell .bite-cell-stars {
-        display: block;
-        color: #a8a29e;
-        font-size: 0.5rem;
-        letter-spacing: -0.06em;
-        min-height: 0.65rem;
-    }
-    .bite-hour-cell.is-peak {
-        border-color: rgba(214, 181, 110, 0.55);
-        background: #faf6ef;
-    }
-    .bite-hour-cell.is-peak strong {
-        color: #78716c;
-    }
-    .bite-hour-cell.lvl-0,
-    .bite-hour-cell.lvl-1 { background: #f8fafc; }
-    .bite-hour-cell.lvl-2 { background: #f1f5f9; }
-    .bite-hour-cell.lvl-3 { background: #f5f0e8; }
-    .bite-hour-cell.lvl-4,
-    .bite-hour-cell.lvl-5 { background: #f3ebe0; }
-
     @media (max-width: 900px) {
         .top-header {
             flex-direction: column;
@@ -338,9 +271,6 @@ include_once __DIR__ . '/header.php';
             border-bottom: 1px solid #eee;
             margin-bottom: 0.35rem;
             padding-bottom: 0.3rem;
-        }
-        .bite-hour-strip {
-            grid-template-columns: repeat(6, minmax(0, 1fr));
         }
     }
 </style>
@@ -422,52 +352,6 @@ include_once __DIR__ . '/header.php';
                 ?>
             </dd>
         </dl>
-        <?php
-        $biteScore = $shioyomi['bite_score'] ?? null;
-        $bitePeak = is_array($biteScore) ? ($biteScore['day_peak'] ?? null) : null;
-        ?>
-        <?php if (is_array($biteScore) && is_array($bitePeak)): ?>
-        <?php
-            $peakHourSet = [];
-            foreach (($biteScore['peak_hours'] ?? []) as $ph) {
-                $peakHourSet[(int)$ph] = true;
-            }
-        ?>
-        <div class="bite-score-block">
-            <p class="bite-score-title"><?php echo htmlspecialchars((string)$biteScore['name'], ENT_QUOTES, 'UTF-8'); ?></p>
-            <p class="bite-score-peak">
-                ピーク <?php echo htmlspecialchars((string)$bitePeak['time'], ENT_QUOTES, 'UTF-8'); ?>
-                · <?php echo number_format((float)$bitePeak['score'], 1); ?>
-                （★<?php echo (int)($bitePeak['stars'] ?? 0); ?>）
-            </p>
-            <p class="bite-score-note">潮位グラフの薄帯がピーク帯。詳細は下の時間帯一覧。★1＝1.0</p>
-            <div class="bite-hour-strip" aria-label="時間帯ごとの釣時スコア">
-                <?php foreach (($biteScore['hourly'] ?? []) as $row): ?>
-                    <?php
-                    $cellStars = (int)($row['stars'] ?? 0);
-                    $isPeakBand = isset($peakHourSet[(int)$row['hour']]);
-                    $lvl = max(0, min(5, $cellStars));
-                    ?>
-                    <div class="bite-hour-cell lvl-<?php echo $lvl; ?><?php echo $isPeakBand ? ' is-peak' : ''; ?>" title="<?php
-                        echo htmlspecialchars(
-                            sprintf(
-                                '%s %.1f %s',
-                                $row['time'],
-                                (float)$row['score'],
-                                str_repeat('★', $cellStars) . str_repeat('☆', max(0, 5 - $cellStars))
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        );
-                    ?>">
-                        <?php echo sprintf('%02d', (int)$row['hour']); ?>
-                        <span class="bite-cell-stars"><?php echo $cellStars > 0 ? str_repeat('★', min(3, $cellStars)) : '·'; ?></span>
-                        <strong><?php echo number_format((float)$row['score'], 1); ?></strong>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
     </section>
 </div>
 
@@ -478,7 +362,6 @@ include_once __DIR__ . '/header.php';
 <script>
     const tide_data = <?php echo json_encode($tide_data_array['tide'], JSON_THROW_ON_ERROR); ?>;
     const wind_speed = <?php echo json_encode($weather_data['wind_speed'] ?? [], JSON_THROW_ON_ERROR); ?>;
-    const bite_hourly = <?php echo json_encode($shioyomi['bite_score']['hourly'] ?? [], JSON_THROW_ON_ERROR); ?>;
     const bite_peak_hours = <?php echo json_encode($shioyomi['bite_score']['peak_hours'] ?? [], JSON_THROW_ON_ERROR); ?>;
     
     const tide_time = get_dataset(tide_data, 'time');
@@ -495,10 +378,6 @@ include_once __DIR__ . '/header.php';
         return null;
     });
 
-    const biteByHour = {};
-    bite_hourly.forEach(function (row) {
-        biteByHour[row.hour] = row;
-    });
     const peakHourSet = {};
     (bite_peak_hours || []).forEach(function (h) { peakHourSet[h] = true; });
 
@@ -507,34 +386,44 @@ include_once __DIR__ . '/header.php';
     
     const ctx = document.getElementById('chart').getContext('2d');
 
-    const starLabel = function (stars) {
-        const n = Math.max(0, Math.min(5, Number(stars) || 0));
-        return '★'.repeat(n) + '☆'.repeat(5 - n);
-    };
-
-    // Chart.js 2.7: ピーク帯のみ（薄い縦ゾーン）。スコア線は描かず潮位を主役に保つ
-    Chart.pluginService.register({
-        beforeDatasetsDraw: function (chart) {
-            if (!chart.canvas || chart.canvas.id !== 'chart') return;
-            const xAxis = chart.scales['x-axis-0'];
-            const yAxis = chart.scales['y-axis-1'];
-            if (!xAxis || !yAxis) return;
-            const labels = chart.data.labels || [];
-            const ctx2 = chart.chart.ctx;
-            Object.keys(peakHourSet).forEach(function (hourKey) {
-                const hour = Number(hourKey);
-                const startIdx = hour * 3;
-                const endIdx = Math.min(startIdx + 3, labels.length - 1);
-                if (startIdx >= labels.length) return;
-                const x1 = xAxis.getPixelForTick(startIdx);
-                const x2 = xAxis.getPixelForTick(endIdx);
-                ctx2.save();
-                ctx2.fillStyle = 'rgba(214, 181, 110, 0.12)';
-                ctx2.fillRect(x1, yAxis.top, Math.max(2, x2 - x1), yAxis.bottom - yAxis.top);
-                ctx2.restore();
-            });
-        }
-    });
+    // Chart.js 2.7: ピーク帯の縦ゾーン（目視できる濃さ。潮位線の下に描画）
+    if (!window.__SHIOYOMI_PEAK_BAND_PLUGIN__) {
+        window.__SHIOYOMI_PEAK_BAND_PLUGIN__ = true;
+        Chart.pluginService.register({
+            id: 'shioyomiPeakBands',
+            beforeDatasetsDraw: function (chart) {
+                if (!chart.canvas || chart.canvas.id !== 'chart') return;
+                const xAxis = chart.scales['x-axis-0'];
+                const area = chart.chartArea;
+                if (!xAxis || !area) return;
+                const labels = chart.data.labels || [];
+                const ctx2 = chart.chart.ctx;
+                const hours = Object.keys(peakHourSet).map(Number).sort(function (a, b) { return a - b; });
+                hours.forEach(function (hour) {
+                    const startIdx = hour * 3;
+                    const endIdx = Math.min(startIdx + 3, labels.length - 1);
+                    if (startIdx >= labels.length || startIdx < 0) return;
+                    const x1 = xAxis.getPixelForTick(startIdx);
+                    const x2 = xAxis.getPixelForTick(endIdx);
+                    if (!isFinite(x1) || !isFinite(x2)) return;
+                    const left = Math.min(x1, x2);
+                    const width = Math.max(4, Math.abs(x2 - x1));
+                    ctx2.save();
+                    ctx2.fillStyle = 'rgba(245, 180, 70, 0.28)';
+                    ctx2.fillRect(left, area.top, width, area.bottom - area.top);
+                    ctx2.strokeStyle = 'rgba(217, 140, 40, 0.45)';
+                    ctx2.lineWidth = 1;
+                    ctx2.beginPath();
+                    ctx2.moveTo(left, area.top);
+                    ctx2.lineTo(left, area.bottom);
+                    ctx2.moveTo(left + width, area.top);
+                    ctx2.lineTo(left + width, area.bottom);
+                    ctx2.stroke();
+                    ctx2.restore();
+                });
+            }
+        });
+    }
 
     const adjustStyles = function (chart, width) {
         if (width < 768) {
@@ -592,17 +481,6 @@ include_once __DIR__ . '/header.php';
             tooltips: {
                 mode: 'index',
                 intersect: false,
-                callbacks: {
-                    afterBody: function (items) {
-                        if (!items || !items.length) return '';
-                        const idx = items[0].index;
-                        let hour = Math.floor(idx / 3);
-                        if (hour >= 24) hour = 23;
-                        const row = biteByHour[hour];
-                        if (!row) return '';
-                        return '釣時 ' + Number(row.score).toFixed(1) + ' ' + starLabel(row.stars);
-                    }
-                }
             },
             legend: {
                 display: true,
