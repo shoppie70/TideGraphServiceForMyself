@@ -219,6 +219,40 @@ include_once __DIR__ . '/header.php';
         border-right: 2px solid rgba(255, 193, 7, 0.95);
         box-sizing: border-box;
     }
+    /* 時間帯ごとの活性★（チャート上レイヤ。軸は増やさない） */
+    .bite-star-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .bite-star-layer .bite-star-col {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        line-height: 1.05;
+        font-size: 11px;
+        font-weight: 700;
+        color: #d97706;
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.95), 0 1px 0 rgba(255, 255, 255, 0.8);
+        transform: translateX(-50%);
+        white-space: nowrap;
+    }
+    .bite-star-layer .bite-star-col.is-peak {
+        color: #b45309;
+        font-size: 12px;
+    }
+    @media (max-width: 768px) {
+        .bite-star-layer .bite-star-col {
+            font-size: 9px;
+        }
+        .bite-star-layer .bite-star-col.is-peak {
+            font-size: 10px;
+        }
+    }
 
     .tide-info-panel {
         position: static;
@@ -333,6 +367,7 @@ include_once __DIR__ . '/header.php';
     <div class="chart-container">
         <div id="peak-band-layer" class="peak-band-layer" aria-hidden="true"></div>
         <canvas id="chart"></canvas>
+        <div id="bite-star-layer" class="bite-star-layer" aria-hidden="true"></div>
     </div>
 
     <section class="tide-info-panel" aria-label="潮汐情報">
@@ -392,6 +427,7 @@ include_once __DIR__ . '/header.php';
     const tide_data = <?php echo json_encode($tide_data_array['tide'], JSON_THROW_ON_ERROR); ?>;
     const wind_speed = <?php echo json_encode($weather_data['wind_speed'] ?? [], JSON_THROW_ON_ERROR); ?>;
     const bite_peak_hours = <?php echo json_encode($shioyomi['bite_score']['peak_hours'] ?? [], JSON_THROW_ON_ERROR); ?>;
+    const bite_hourly = <?php echo json_encode($shioyomi['bite_score']['hourly'] ?? [], JSON_THROW_ON_ERROR); ?>;
     
     const tide_time = get_dataset(tide_data, 'time');
     const tide_cm = get_dataset(tide_data, 'cm');
@@ -409,6 +445,11 @@ include_once __DIR__ . '/header.php';
 
     const peakHourSet = {};
     (bite_peak_hours || []).forEach(function (h) { peakHourSet[h] = true; });
+
+    const biteByHour = {};
+    (bite_hourly || []).forEach(function (row) {
+        biteByHour[row.hour] = row;
+    });
 
     function mergePeakHourRanges(hours) {
         const sorted = hours.slice().sort(function (a, b) { return a - b; });
@@ -453,12 +494,46 @@ include_once __DIR__ . '/header.php';
         });
     }
 
+    // 各正時のチャート上端に ★ を縦積み（第3軸なし・数値ボックスなし）
+    function syncBiteStarOverlay(chart) {
+        const layer = document.getElementById('bite-star-layer');
+        if (!layer || !chart || !chart.canvas || chart.canvas.id !== 'chart') return;
+        const xAxis = chart.scales['x-axis-0'];
+        const area = chart.chartArea;
+        if (!xAxis || !area) return;
+        const labels = chart.data.labels || [];
+        layer.innerHTML = '';
+        for (let hour = 0; hour < 24; hour++) {
+            const row = biteByHour[hour];
+            if (!row) continue;
+            const stars = Math.max(0, Math.min(5, Number(row.stars) || 0));
+            if (stars <= 0) continue;
+            const idx = hour * 3;
+            if (idx >= labels.length) continue;
+            const x = xAxis.getPixelForTick(idx);
+            if (!isFinite(x)) continue;
+            const col = document.createElement('div');
+            col.className = 'bite-star-col' + (peakHourSet[hour] ? ' is-peak' : '');
+            col.style.left = x + 'px';
+            col.style.top = (area.top + 2) + 'px';
+            col.textContent = '★'.repeat(stars);
+            // 縦積み表示（文字を1つずつ改行）
+            col.innerHTML = '';
+            for (let s = 0; s < stars; s++) {
+                const span = document.createElement('span');
+                span.textContent = '★';
+                col.appendChild(span);
+            }
+            layer.appendChild(col);
+        }
+    }
+
     Chart.defaults.global.defaultFontColor = '#333';
     Chart.defaults.global.defaultFontFamily = "'Inter', 'Noto Sans JP', sans-serif";
     
     const ctx = document.getElementById('chart').getContext('2d');
 
-    // Chart.js 2.7: はっきりした黄色い縦帯（潮位 fill の上でも黄色と分かる濃さ）
+    // Chart.js 2.7: はっきりした黄色い縦帯（潮位 fill の上でも黄色と分かる濃さ）＋時間帯★
     if (!window.__SHIOYOMI_PEAK_BAND_PLUGIN__) {
         window.__SHIOYOMI_PEAK_BAND_PLUGIN__ = true;
         Chart.pluginService.register({
@@ -516,6 +591,7 @@ include_once __DIR__ . '/header.php';
                     ctx2.restore();
                 });
                 syncPeakBandOverlay(chart);
+                syncBiteStarOverlay(chart);
             }
         });
     }
@@ -523,10 +599,14 @@ include_once __DIR__ . '/header.php';
     const adjustStyles = function (chart, width) {
         if (width < 768) {
             chart.data.datasets[0].borderWidth = 2;
+            chart.data.datasets[0].pointRadius = 1.5;
+            chart.data.datasets[0].pointHoverRadius = 3;
             chart.data.datasets[0].pointHoverBorderWidth = 3;
             if (chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 2;
         } else {
             chart.data.datasets[0].borderWidth = 7;
+            chart.data.datasets[0].pointRadius = 2.5;
+            chart.data.datasets[0].pointHoverRadius = 5;
             chart.data.datasets[0].pointHoverBorderWidth = 10;
             if (chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 3;
         }
@@ -544,10 +624,13 @@ include_once __DIR__ . '/header.php';
                     fill: true,
                     borderColor: '#35b0eb',
                     backgroundColor: 'rgba(169, 227, 255, 0.5)',
+                    pointBackgroundColor: '#35b0eb',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
                     lineTension: 0.5,
                     borderWidth: 7,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5,
                     pointHoverBorderWidth: 10,
                 },
                 {
@@ -576,12 +659,37 @@ include_once __DIR__ . '/header.php';
             tooltips: {
                 mode: 'index',
                 intersect: false,
+                callbacks: {
+                    afterBody: function (items) {
+                        if (!items || !items.length) return;
+                        const idx = items[0].index;
+                        let hour = Math.floor(idx / 3);
+                        if (hour >= 24) hour = 23;
+                        const row = biteByHour[hour];
+                        if (!row) return;
+                        const n = Math.max(0, Math.min(5, Number(row.stars) || 0));
+                        return '★'.repeat(n) + '☆'.repeat(5 - n) + ' (' + Number(row.score).toFixed(1) + ')';
+                    }
+                }
             },
             legend: {
                 display: true,
                 position: 'bottom',
                 labels: {
                     usePointStyle: true,
+                    generateLabels: function (chart) {
+                        const labels = Chart.defaults.global.legend.labels.generateLabels(chart);
+                        labels.push({
+                            text: '★＝活性目安',
+                            fillStyle: '#d97706',
+                            strokeStyle: '#d97706',
+                            lineWidth: 0,
+                            hidden: false,
+                            index: -1,
+                            datasetIndex: -1
+                        });
+                        return labels;
+                    }
                 }
             },
             scales: {
