@@ -22,7 +22,7 @@ try {
 
     $cacheKey = ResponseCache::key(
         'tide',
-        'v2-bite', // bite_score / pressure スキーマ更新時にバンプ
+        'v3-current-turn', // current_turn 追加時にバンプ
         $place['prefecture'],
         $place['code'],
         $date->format('Y-m-d'),

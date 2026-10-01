@@ -91,12 +91,13 @@
     if (page === "chart") {
       await registerTool(modelContext, {
         name: "get_tide_summary",
-        description: "現在表示中の港・日付の潮回り、満潮干潮、日の出入、天気、bite_score の要約を返す。",
+        description: "現在表示中の港・日付の潮回り、満潮干潮、転流、日の出入、天気、bite_score の要約を返す。",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, openWorldHint: false },
         execute: async function () {
           var current = getCtx() || ctx;
           var bite = current.bite_score || null;
+          var turn = current.current_turn || null;
           return jsonResult({
             place: current.place,
             date: current.date,
@@ -105,6 +106,15 @@
             sun: current.sun,
             flood: current.flood,
             edd: current.edd,
+            current_turn: turn
+              ? {
+                  available: !!turn.available,
+                  source: turn.source,
+                  source_label: turn.source_label,
+                  note: turn.note,
+                  events: turn.events || [],
+                }
+              : null,
             weather: current.weather
               ? {
                   label: current.weather.label,

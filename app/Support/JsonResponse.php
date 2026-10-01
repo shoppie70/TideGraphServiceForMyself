@@ -86,6 +86,26 @@ class JsonResponse
             $lines[] = ($event['time'] ?? '-') . "\t" . ($event['cm'] ?? '-') . 'cm';
         }
 
+        $turn = $payload['current_turn'] ?? null;
+        $lines[] = '';
+        $lines[] = '## current_turn';
+        if (is_array($turn)) {
+            $lines[] = 'available: ' . (!empty($turn['available']) ? 'true' : 'false');
+            $lines[] = 'source: ' . ($turn['source'] ?? '');
+            $lines[] = 'source_label: ' . ($turn['source_label'] ?? '');
+            foreach ($turn['events'] ?? [] as $event) {
+                $lines[] = sprintf(
+                    "%s\t%s\t%s\t%s",
+                    $event['time'] ?? '-',
+                    $event['direction'] ?? '-',
+                    $event['label'] ?? '-',
+                    !empty($event['approx']) ? 'approx' : 'exact'
+                );
+            }
+        } else {
+            $lines[] = 'available: false';
+        }
+
         if (!empty($payload['tide']) && is_array($payload['tide'])) {
             $lines[] = '';
             $lines[] = '## tide_series_20min';
