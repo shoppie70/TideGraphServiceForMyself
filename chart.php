@@ -118,7 +118,7 @@ include_once __DIR__ . '/header.php';
         font-family: 'Inter', 'Noto Sans JP', sans-serif;
         background-color: #ffffff;
         color: #333;
-        overflow: hidden;
+        overflow: auto;
     }
 
     .top-header {
@@ -184,35 +184,35 @@ include_once __DIR__ . '/header.php';
     }
 
     .content-wrap {
-        position: relative;
-        height: calc(100svh - 60px);
-        width: 100vw;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        width: 100%;
+        min-height: calc(100svh - 60px);
+        box-sizing: border-box;
     }
 
     .chart-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1;
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 420px;
+        height: calc(100svh - 60px);
     }
 
     .tide-info-panel {
-        position: absolute;
-        right: 5rem;
-        top: 1rem;
-        width: 220px;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        position: static;
+        flex: 0 0 260px;
+        width: 260px;
+        max-width: 100%;
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        border-radius: 0;
         padding: 1rem;
-        z-index: 10;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        max-height: calc(100% - 2rem);
+        box-shadow: none;
+        max-height: calc(100svh - 60px);
         overflow: auto;
+        box-sizing: border-box;
     }
 
     .info-dl {
@@ -318,27 +318,21 @@ include_once __DIR__ . '/header.php';
             justify-content: center;
         }
         .content-wrap {
-            height: auto;
-            min-height: calc(100svh - 130px);
-            display: flex;
             flex-direction: column;
+            min-height: 0;
         }
         .chart-container {
-            position: relative;
+            width: 100%;
             height: 52vh;
             min-height: 280px;
         }
         .tide-info-panel {
-            position: relative;
-            width: auto;
+            flex: 0 0 auto;
+            width: 100%;
             max-height: none;
-            top: auto;
-            right: auto;
-            left: auto;
-            margin: 0.5rem;
-            transform: none;
-            display: block;
-            padding: 0.75rem;
+            border-left: none;
+            border-top: 1px solid #e5e7eb;
+            padding: 0.75rem 1rem 1.25rem;
         }
         .info-dl {
             border-bottom: 1px solid #eee;
@@ -347,9 +341,6 @@ include_once __DIR__ . '/header.php';
         }
         .bite-hour-strip {
             grid-template-columns: repeat(6, minmax(0, 1fr));
-        }
-        body {
-            overflow: auto;
         }
     }
 </style>
