@@ -91,11 +91,12 @@
     if (page === "chart") {
       await registerTool(modelContext, {
         name: "get_tide_summary",
-        description: "現在表示中の港・日付の潮回り、満潮干潮、日の出入、天気の要約を返す。",
+        description: "現在表示中の港・日付の潮回り、満潮干潮、日の出入、天気、釣時スコアの要約を返す。",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, openWorldHint: false },
         execute: async function () {
           var current = getCtx() || ctx;
+          var bite = current.bite_score || null;
           return jsonResult({
             place: current.place,
             date: current.date,
@@ -111,6 +112,14 @@
                   temp_min: current.weather.temp_min,
                 }
               : null,
+            bite_score: bite
+              ? {
+                  name: bite.name,
+                  description: bite.description,
+                  scale: bite.scale,
+                  day_peak: bite.day_peak,
+                }
+              : null,
             summary_text: current.summary_text,
           });
         },
@@ -118,11 +127,15 @@
 
       await registerTool(modelContext, {
         name: "get_tide_series",
-        description: "現在表示中の20分間隔潮位時系列と、必要なら時間別風速を返す。",
+        description: "現在表示中の20分間隔潮位時系列と、必要なら時間別風速・釣時スコアを返す。",
         inputSchema: {
           type: "object",
           properties: {
             include_wind: { type: "boolean", description: "風速(m/s)配列を含めるか" },
+            include_bite_score: {
+              type: "boolean",
+              description: "釣時スコア（時間帯ごと）を含めるか。省略時 true",
+            },
           },
           additionalProperties: false,
         },
@@ -130,6 +143,10 @@
         execute: async function (args) {
           var current = getCtx() || ctx;
           var includeWind = !!(args && args.include_wind);
+          var includeBite =
+            !args || args.include_bite_score === undefined || args.include_bite_score === null
+              ? true
+              : !!args.include_bite_score;
           var result = {
             date: current.date,
             place: current.place,
@@ -137,6 +154,9 @@
           };
           if (includeWind && current.weather) {
             result.wind_speed = current.weather.wind_speed_ms || [];
+          }
+          if (includeBite && current.bite_score) {
+            result.bite_score = current.bite_score;
           }
           return jsonResult(result);
         },

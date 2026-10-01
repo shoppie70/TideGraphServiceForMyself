@@ -60,6 +60,21 @@ class JsonResponse
         $lines[] = 'moon: ' . ($payload['moon']['title'] ?? '');
         $lines[] = 'sun_rise: ' . ($payload['sun']['rise'] ?? '');
         $lines[] = 'sun_set: ' . ($payload['sun']['set'] ?? '');
+
+        $bite = $payload['bite_score'] ?? null;
+        if (is_array($bite)) {
+            $peak = $bite['day_peak'] ?? null;
+            $lines[] = 'bite_score_name: ' . ($bite['name'] ?? '釣時スコア');
+            if (is_array($peak)) {
+                $lines[] = sprintf(
+                    'bite_score_peak: %s score=%.1f stars=%d',
+                    $peak['time'] ?? '-',
+                    (float)($peak['score'] ?? 0),
+                    (int)($peak['stars'] ?? 0)
+                );
+            }
+        }
+
         $lines[] = '';
         $lines[] = '## flood';
         foreach ($payload['flood'] ?? [] as $event) {
@@ -77,6 +92,20 @@ class JsonResponse
             $lines[] = "time\tcm";
             foreach ($payload['tide'] as $point) {
                 $lines[] = ($point['time'] ?? '-') . "\t" . ($point['cm'] ?? '-');
+            }
+        }
+
+        if (!empty($payload['bite_score']['hourly']) && is_array($payload['bite_score']['hourly'])) {
+            $lines[] = '';
+            $lines[] = '## bite_score_hourly';
+            $lines[] = "time\tscore\tstars";
+            foreach ($payload['bite_score']['hourly'] as $row) {
+                $lines[] = sprintf(
+                    "%s\t%s\t%s",
+                    $row['time'] ?? '-',
+                    $row['score'] ?? '-',
+                    $row['stars'] ?? '-'
+                );
             }
         }
 

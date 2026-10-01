@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Services\BiteScoreService;
 use App\Services\CalendarService;
 use App\Services\TideGraphService;
 use App\Services\WeatherService;
@@ -85,14 +86,30 @@ class ShioyomiPayload
             $payload['places'] = PlaceResolver::all();
         }
 
+        $tideSeries = array_map(static function ($point): array {
+            return [
+                'time' => $point['time'] ?? null,
+                'cm' => isset($point['cm']) ? (float)$point['cm'] : null,
+            ];
+        }, $tide['tide'] ?? []);
+
         if ($includeSeries) {
-            $payload['tide'] = array_map(static function ($point): array {
-                return [
-                    'time' => $point['time'] ?? null,
-                    'cm' => isset($point['cm']) ? (float)$point['cm'] : null,
-                ];
-            }, $tide['tide'] ?? []);
+            $payload['tide'] = $tideSeries;
         }
+
+        $windSpeedMs = null;
+        if (is_array($payload['weather'] ?? null) && isset($payload['weather']['wind_speed_ms'])) {
+            $windSpeedMs = $payload['weather']['wind_speed_ms'];
+        }
+
+        $payload['bite_score'] = BiteScoreService::compute(
+            $tideSeries,
+            $payload['flood'],
+            $payload['edd'],
+            $payload['moon'],
+            $payload['sun'],
+            $windSpeedMs
+        );
 
         $payload['summary_text'] = self::buildTideSummaryText($payload);
 
@@ -238,8 +255,19 @@ class ShioyomiPayload
             )
             : '天気データなし。';
 
+        $peak = $payload['bite_score']['day_peak'] ?? null;
+        $biteText = $peak
+            ? sprintf(
+                '%sのピークは %s 頃 %s（%.1f）。',
+                BiteScoreService::NAME,
+                $peak['time'] ?? '-',
+                BiteScoreService::starsLabel((int)($peak['stars'] ?? 0)),
+                (float)($peak['score'] ?? 0)
+            )
+            : '';
+
         return sprintf(
-            '%s（%s）の %s。潮回りは%s。日の出 %s、日の入 %s。満潮 %s。干潮 %s。%s',
+            '%s（%s）の %s。潮回りは%s。日の出 %s、日の入 %s。満潮 %s。干潮 %s。%s%s',
             $payload['place']['harbor_name'] ?? $payload['place']['name'],
             '都道府県' . $payload['place']['prefecture'] . '/港' . $payload['place']['code'],
             $payload['date'],
@@ -248,7 +276,8 @@ class ShioyomiPayload
             $payload['sun']['set'] ?? '-',
             $flood,
             $edd,
-            $weatherText
+            $weatherText,
+            $biteText
         );
     }
 

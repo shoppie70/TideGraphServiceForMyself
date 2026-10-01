@@ -237,6 +237,57 @@ include_once __DIR__ . '/header.php';
         font-weight: 700;
     }
 
+    .bite-score-block {
+        margin-top: 0.6rem;
+        padding-top: 0.6rem;
+        border-top: 1px solid #eee;
+    }
+    .bite-score-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #0f766e;
+        margin: 0 0 0.25rem;
+    }
+    .bite-score-peak {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #134e4a;
+        margin: 0 0 0.25rem;
+    }
+    .bite-score-stars {
+        letter-spacing: 0.05em;
+        color: #d97706;
+    }
+    .bite-score-note {
+        font-size: 0.7rem;
+        line-height: 1.35;
+        color: #64748b;
+        margin: 0;
+    }
+    .bite-hour-strip {
+        display: flex;
+        gap: 2px;
+        margin-top: 0.45rem;
+        overflow-x: auto;
+        padding-bottom: 0.15rem;
+    }
+    .bite-hour-cell {
+        flex: 0 0 auto;
+        min-width: 1.55rem;
+        text-align: center;
+        font-size: 0.62rem;
+        line-height: 1.2;
+        color: #475569;
+    }
+    .bite-hour-cell strong {
+        display: block;
+        font-size: 0.68rem;
+        color: #0f766e;
+    }
+    .bite-hour-cell.is-peak strong {
+        color: #b45309;
+    }
+
     @media (max-width: 900px) {
         .top-header {
             flex-direction: column;
@@ -351,6 +402,47 @@ include_once __DIR__ . '/header.php';
                 ?>
             </dd>
         </dl>
+        <?php
+        $biteScore = $shioyomi['bite_score'] ?? null;
+        $bitePeak = is_array($biteScore) ? ($biteScore['day_peak'] ?? null) : null;
+        ?>
+        <?php if (is_array($biteScore) && is_array($bitePeak)): ?>
+        <div class="bite-score-block">
+            <p class="bite-score-title"><?php echo htmlspecialchars((string)$biteScore['name'], ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="bite-score-peak">
+                ピーク <?php echo htmlspecialchars((string)$bitePeak['time'], ENT_QUOTES, 'UTF-8'); ?>
+                <span class="bite-score-stars"><?php
+                    $peakStars = (int)($bitePeak['stars'] ?? 0);
+                    echo str_repeat('★', $peakStars) . str_repeat('☆', max(0, 5 - $peakStars));
+                ?></span>
+                <span style="font-weight:700;color:#0f766e;"><?php echo number_format((float)$bitePeak['score'], 1); ?></span>
+            </p>
+            <p class="bite-score-note"><?php echo htmlspecialchars((string)($biteScore['description'] ?? ''), ENT_QUOTES, 'UTF-8'); ?> ★1＝1.0</p>
+            <div class="bite-hour-strip" aria-label="時間帯ごとの釣時スコア">
+                <?php foreach (($biteScore['hourly'] ?? []) as $row): ?>
+                    <?php
+                    $isPeak = ((int)$row['hour'] === (int)$bitePeak['hour']);
+                    $cellStars = (int)($row['stars'] ?? 0);
+                    ?>
+                    <div class="bite-hour-cell<?php echo $isPeak ? ' is-peak' : ''; ?>" title="<?php
+                        echo htmlspecialchars(
+                            sprintf(
+                                '%s %.1f %s',
+                                $row['time'],
+                                (float)$row['score'],
+                                str_repeat('★', $cellStars) . str_repeat('☆', max(0, 5 - $cellStars))
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        );
+                    ?>">
+                        <?php echo (int)$row['hour']; ?>
+                        <strong><?php echo number_format((float)$row['score'], 1); ?></strong>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
     </section>
 </div>
 
@@ -361,6 +453,7 @@ include_once __DIR__ . '/header.php';
 <script>
     const tide_data = <?php echo json_encode($tide_data_array['tide'], JSON_THROW_ON_ERROR); ?>;
     const wind_speed = <?php echo json_encode($weather_data['wind_speed'] ?? [], JSON_THROW_ON_ERROR); ?>;
+    const bite_hourly = <?php echo json_encode($shioyomi['bite_score']['hourly'] ?? [], JSON_THROW_ON_ERROR); ?>;
     
     const tide_time = get_dataset(tide_data, 'time');
     const tide_cm = get_dataset(tide_data, 'cm');
@@ -376,6 +469,18 @@ include_once __DIR__ . '/header.php';
         return null;
     });
 
+    const biteByHour = {};
+    bite_hourly.forEach(function (row) {
+        biteByHour[row.hour] = row;
+    });
+    const mapped_bite_score = tide_time.map(function (time, index) {
+        if (index % 3 !== 0) return null;
+        let hour = index / 3;
+        if (hour >= 24) hour = 23;
+        const row = biteByHour[hour];
+        return row ? row.score : null;
+    });
+
     Chart.defaults.global.defaultFontColor = '#333';
     Chart.defaults.global.defaultFontFamily = "'Inter', 'Noto Sans JP', sans-serif";
     
@@ -386,11 +491,18 @@ include_once __DIR__ . '/header.php';
             chart.data.datasets[0].borderWidth = 2;
             chart.data.datasets[0].pointHoverBorderWidth = 3;
             if(chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 2;
+            if(chart.data.datasets[2]) chart.data.datasets[2].borderWidth = 2;
         } else {
             chart.data.datasets[0].borderWidth = 7;
             chart.data.datasets[0].pointHoverBorderWidth = 10;
             if(chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 3;
+            if(chart.data.datasets[2]) chart.data.datasets[2].borderWidth = 3;
         }
+    };
+
+    const starLabel = function (stars) {
+        const n = Math.max(0, Math.min(5, Number(stars) || 0));
+        return '★'.repeat(n) + '☆'.repeat(5 - n);
     };
     
     const myChart = new Chart(ctx, {
@@ -422,6 +534,20 @@ include_once __DIR__ . '/header.php';
                     borderWidth: 3,
                     pointRadius: 2,
                     pointHoverRadius: 4,
+                },
+                {
+                    label: '釣時スコア (0-5)',
+                    yAxisID: 'y-axis-3',
+                    data: mapped_bite_score,
+                    fill: false,
+                    spanGaps: true,
+                    borderColor: '#d97706',
+                    backgroundColor: '#d97706',
+                    borderDash: [2, 3],
+                    lineTension: 0.25,
+                    borderWidth: 3,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
                 }
             ],
         },
@@ -435,6 +561,17 @@ include_once __DIR__ . '/header.php';
             tooltips: {
                 mode: 'index',
                 intersect: false,
+                callbacks: {
+                    afterBody: function (items) {
+                        if (!items || !items.length) return '';
+                        const idx = items[0].index;
+                        let hour = Math.floor(idx / 3);
+                        if (hour >= 24) hour = 23;
+                        const row = biteByHour[hour];
+                        if (!row) return '';
+                        return '釣時 ' + starLabel(row.stars) + ' (' + Number(row.score).toFixed(1) + ')';
+                    }
+                }
             },
             legend: {
                 display: true,
@@ -470,6 +607,20 @@ include_once __DIR__ . '/header.php';
                         scaleLabel: {
                             display: true,
                             labelString: '風速 (m/s)'
+                        }
+                    },
+                    {
+                        id: 'y-axis-3',
+                        type: 'linear',
+                        position: 'right',
+                        display: false,
+                        ticks: {
+                            min: 0,
+                            max: 5,
+                            beginAtZero: true
+                        },
+                        gridLines: {
+                            drawOnChartArea: false,
                         }
                     }
                 ]
