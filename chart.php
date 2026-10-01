@@ -597,18 +597,28 @@ include_once __DIR__ . '/header.php';
     }
 
     const adjustStyles = function (chart, width) {
+        const tide = chart.data.datasets[0];
+        const wind = chart.data.datasets[1];
         if (width < 768) {
-            chart.data.datasets[0].borderWidth = 2;
-            chart.data.datasets[0].pointRadius = 1.5;
-            chart.data.datasets[0].pointHoverRadius = 3;
-            chart.data.datasets[0].pointHoverBorderWidth = 3;
-            if (chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 2;
+            tide.borderWidth = 2;
+            tide.pointRadius = 3;
+            tide.pointHoverRadius = 5;
+            tide.pointHoverBorderWidth = 2;
+            tide.pointBorderWidth = 2;
+            if (wind) {
+                wind.borderWidth = 2;
+                wind.pointRadius = 2.5;
+            }
         } else {
-            chart.data.datasets[0].borderWidth = 7;
-            chart.data.datasets[0].pointRadius = 2.5;
-            chart.data.datasets[0].pointHoverRadius = 5;
-            chart.data.datasets[0].pointHoverBorderWidth = 10;
-            if (chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 3;
+            tide.borderWidth = 7;
+            tide.pointRadius = 3;
+            tide.pointHoverRadius = 6;
+            tide.pointHoverBorderWidth = 2;
+            tide.pointBorderWidth = 2;
+            if (wind) {
+                wind.borderWidth = 3;
+                wind.pointRadius = 2;
+            }
         }
     };
     
@@ -624,14 +634,14 @@ include_once __DIR__ . '/header.php';
                     fill: true,
                     borderColor: '#35b0eb',
                     backgroundColor: 'rgba(169, 227, 255, 0.5)',
-                    pointBackgroundColor: '#35b0eb',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 1,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#35b0eb',
+                    pointBorderWidth: 2,
                     lineTension: 0.5,
                     borderWidth: 7,
-                    pointRadius: 2.5,
-                    pointHoverRadius: 5,
-                    pointHoverBorderWidth: 10,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointHoverBorderWidth: 2,
                 },
                 {
                     label: '風速 (m/s)',
