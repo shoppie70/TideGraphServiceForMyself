@@ -7,15 +7,36 @@ namespace App\Support;
  */
 class HttpClient
 {
-    public static function get(string $url, int $timeoutSeconds = 4): ?string
+    /**
+     * @param list<string> $extraHeaders 追加ヘッダ（例: 'Accept: text/html'）
+     */
+    public static function get(string $url, int $timeoutSeconds = 4, array $extraHeaders = []): ?string
     {
         $timeoutSeconds = max(1, $timeoutSeconds);
+        $headers = [
+            'Accept: application/json, text/plain, */*',
+            'User-Agent: Shioyomi/1.0 (+https://static.sho-tsukamoto.jp/tidegraph; personal tide chart reference)',
+        ];
+        foreach ($extraHeaders as $header) {
+            if (!is_string($header) || $header === '') {
+                continue;
+            }
+            $name = strtolower((string)strstr($header, ':', true));
+            $headers = array_values(array_filter(
+                $headers,
+                static function (string $h) use ($name): bool {
+                    return strtolower((string)strstr($h, ':', true)) !== $name;
+                }
+            ));
+            $headers[] = $header;
+        }
+
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
                 'timeout' => $timeoutSeconds,
                 'ignore_errors' => true,
-                'header' => "Accept: application/json, text/plain, */*\r\nUser-Agent: Shioyomi/1.0 (+https://static.sho-tsukamoto.jp/tidegraph)\r\n",
+                'header' => implode("\r\n", $headers) . "\r\n",
             ],
             'ssl' => [
                 'verify_peer' => true,

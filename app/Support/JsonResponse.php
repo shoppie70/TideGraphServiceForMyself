@@ -93,13 +93,22 @@ class JsonResponse
             $lines[] = 'available: ' . (!empty($turn['available']) ? 'true' : 'false');
             $lines[] = 'source: ' . ($turn['source'] ?? '');
             $lines[] = 'source_label: ' . ($turn['source_label'] ?? '');
+            if (!empty($turn['tiiki'])) {
+                $lines[] = 'tiiki: ' . $turn['tiiki'];
+            }
+            if (!empty($turn['station'])) {
+                $lines[] = 'station: ' . $turn['station'];
+            }
+            if (!empty($turn['source_url'])) {
+                $lines[] = 'source_url: ' . $turn['source_url'];
+            }
             foreach ($turn['events'] ?? [] as $event) {
                 $lines[] = sprintf(
                     "%s\t%s\t%s\t%s",
                     $event['time'] ?? '-',
                     $event['direction'] ?? '-',
                     $event['label'] ?? '-',
-                    !empty($event['approx']) ? 'approx' : 'exact'
+                    !empty($event['approx']) ? 'approx' : 'kaiho'
                 );
             }
         } else {

@@ -116,8 +116,8 @@ class ShioyomiPayload
         );
 
         $payload['current_turn'] = CurrentTurnService::compute(
-            $payload['flood'],
-            $payload['edd']
+            $payload['place'],
+            $payload['date']
         );
 
         $payload['summary_text'] = self::buildTideSummaryText($payload);
@@ -274,10 +274,12 @@ class ShioyomiPayload
                     '%s %s（%s）',
                     $event['time'] ?? '-',
                     $event['direction'] ?? '',
-                    $event['label'] ?? '近似'
+                    $event['label'] ?? '転流'
                 );
             }
-            $turnText = '転流（' . ($turn['source_label'] ?? '近似') . '） ' . implode('、', $parts) . '。';
+            $turnText = '転流（' . ($turn['source_label'] ?? '海保') . '） ' . implode('、', $parts) . '。';
+        } elseif (is_array($turn) && ($turn['source'] ?? '') === 'kaiho_unsupported') {
+            $turnText = '転流 海保未対応。';
         }
 
         // UI / ページ HTML 向け要約にはスコア名称を含めない（数値は bite_score フィールドで提供）

@@ -22,7 +22,7 @@ try {
 
     $cacheKey = ResponseCache::key(
         'tide',
-        'v3-current-turn', // current_turn 追加時にバンプ
+        'v4-kaiho-turn', // 海保 CGI 転流に切替時にバンプ
         $place['prefecture'],
         $place['code'],
         $date->format('Y-m-d'),
