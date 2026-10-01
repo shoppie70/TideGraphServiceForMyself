@@ -259,19 +259,9 @@ class ShioyomiPayload
             )
             : '天気データなし。';
 
-        $peak = $payload['bite_score']['day_peak'] ?? null;
-        $biteText = $peak
-            ? sprintf(
-                '%sのピークは %s 頃 %s（%.1f）。',
-                BiteScoreService::NAME,
-                $peak['time'] ?? '-',
-                BiteScoreService::starsLabel((int)($peak['stars'] ?? 0)),
-                (float)($peak['score'] ?? 0)
-            )
-            : '';
-
+        // UI / ページ HTML 向け要約にはスコア名称を含めない（数値は bite_score フィールドで提供）
         return sprintf(
-            '%s（%s）の %s。潮回りは%s。日の出 %s、日の入 %s。満潮 %s。干潮 %s。%s%s',
+            '%s（%s）の %s。潮回りは%s。日の出 %s、日の入 %s。満潮 %s。干潮 %s。%s',
             $payload['place']['harbor_name'] ?? $payload['place']['name'],
             '都道府県' . $payload['place']['prefecture'] . '/港' . $payload['place']['code'],
             $payload['date'],
@@ -280,8 +270,7 @@ class ShioyomiPayload
             $payload['sun']['set'] ?? '-',
             $flood,
             $edd,
-            $weatherText,
-            $biteText
+            $weatherText
         );
     }
 

@@ -199,6 +199,26 @@ include_once __DIR__ . '/header.php';
         min-height: 420px;
         height: calc(100svh - 60px);
     }
+    .chart-container canvas {
+        position: relative;
+        z-index: 1;
+        background: transparent;
+    }
+    /* canvas の背後にも黄色い縦帯（透明部分から見える保険） */
+    .peak-band-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .peak-band-layer .peak-band {
+        position: absolute;
+        background: rgba(255, 235, 59, 0.45);
+        border-left: 2px solid rgba(255, 193, 7, 0.95);
+        border-right: 2px solid rgba(255, 193, 7, 0.95);
+        box-sizing: border-box;
+    }
 
     .tide-info-panel {
         position: static;
@@ -311,11 +331,20 @@ include_once __DIR__ . '/header.php';
 
 <div class="content-wrap">
     <div class="chart-container">
+        <div id="peak-band-layer" class="peak-band-layer" aria-hidden="true"></div>
         <canvas id="chart"></canvas>
     </div>
 
     <section class="tide-info-panel" aria-label="潮汐情報">
-        <?php echo PageEmbed::renderMachineReadableSummary($shioyomi['summary_text'], '潮汐情報の要約'); ?>
+        <?php
+        // ページ HTML にスコア名称が一切出ないよう埋め込み用ペイロードをサニタイズ
+        $uiSummary = $shioyomi['summary_text'] ?? '';
+        $embedPayload = $shioyomi;
+        if (isset($embedPayload['bite_score']) && is_array($embedPayload['bite_score'])) {
+            unset($embedPayload['bite_score']['name'], $embedPayload['bite_score']['description']);
+        }
+        echo PageEmbed::renderMachineReadableSummary($uiSummary, '潮汐情報の要約');
+        ?>
         <dl class="info-dl">
             <dt class="info-dt">潮回り</dt>
             <dd class="info-dd" style="color: #2980b9;"><?php echo htmlspecialchars($tide_data_array['moon']['title'] ?? ''); ?></dd>
@@ -355,7 +384,7 @@ include_once __DIR__ . '/header.php';
     </section>
 </div>
 
-<?php echo PageEmbed::renderScriptTag($shioyomi); ?>
+<?php echo PageEmbed::renderScriptTag($embedPayload); ?>
 <script src="<?php echo htmlspecialchars(Site::path('assets/js/app.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="<?php echo htmlspecialchars(Site::path('assets/js/webmcp.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="<?php echo htmlspecialchars(Site::path('assets/js/pwa.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
@@ -381,12 +410,55 @@ include_once __DIR__ . '/header.php';
     const peakHourSet = {};
     (bite_peak_hours || []).forEach(function (h) { peakHourSet[h] = true; });
 
+    function mergePeakHourRanges(hours) {
+        const sorted = hours.slice().sort(function (a, b) { return a - b; });
+        const ranges = [];
+        sorted.forEach(function (hour) {
+            const last = ranges[ranges.length - 1];
+            if (last && hour === last.end + 1) {
+                last.end = hour;
+            } else {
+                ranges.push({ start: hour, end: hour });
+            }
+        });
+        return ranges;
+    }
+
+    function syncPeakBandOverlay(chart) {
+        const layer = document.getElementById('peak-band-layer');
+        if (!layer || !chart || !chart.canvas || chart.canvas.id !== 'chart') return;
+        const xAxis = chart.scales['x-axis-0'];
+        const area = chart.chartArea;
+        if (!xAxis || !area) return;
+        const labels = chart.data.labels || [];
+        const hours = Object.keys(peakHourSet).map(Number);
+        const ranges = mergePeakHourRanges(hours);
+        layer.innerHTML = '';
+        ranges.forEach(function (range) {
+            const startIdx = range.start * 3;
+            const endIdx = Math.min((range.end + 1) * 3, labels.length - 1);
+            if (startIdx >= labels.length || startIdx < 0) return;
+            const x1 = xAxis.getPixelForTick(startIdx);
+            const x2 = xAxis.getPixelForTick(endIdx);
+            if (!isFinite(x1) || !isFinite(x2)) return;
+            const left = Math.min(x1, x2);
+            const width = Math.max(8, Math.abs(x2 - x1));
+            const band = document.createElement('div');
+            band.className = 'peak-band';
+            band.style.left = left + 'px';
+            band.style.width = width + 'px';
+            band.style.top = area.top + 'px';
+            band.style.height = Math.max(0, area.bottom - area.top) + 'px';
+            layer.appendChild(band);
+        });
+    }
+
     Chart.defaults.global.defaultFontColor = '#333';
     Chart.defaults.global.defaultFontFamily = "'Inter', 'Noto Sans JP', sans-serif";
     
     const ctx = document.getElementById('chart').getContext('2d');
 
-    // Chart.js 2.7: ピーク帯の縦ゾーン（目視できる濃さ。潮位線の下に描画）
+    // Chart.js 2.7: はっきりした黄色い縦帯（潮位 fill の上でも黄色と分かる濃さ）
     if (!window.__SHIOYOMI_PEAK_BAND_PLUGIN__) {
         window.__SHIOYOMI_PEAK_BAND_PLUGIN__ = true;
         Chart.pluginService.register({
@@ -398,21 +470,43 @@ include_once __DIR__ . '/header.php';
                 if (!xAxis || !area) return;
                 const labels = chart.data.labels || [];
                 const ctx2 = chart.chart.ctx;
-                const hours = Object.keys(peakHourSet).map(Number).sort(function (a, b) { return a - b; });
-                hours.forEach(function (hour) {
-                    const startIdx = hour * 3;
-                    const endIdx = Math.min(startIdx + 3, labels.length - 1);
+                mergePeakHourRanges(Object.keys(peakHourSet).map(Number)).forEach(function (range) {
+                    const startIdx = range.start * 3;
+                    const endIdx = Math.min((range.end + 1) * 3, labels.length - 1);
                     if (startIdx >= labels.length || startIdx < 0) return;
                     const x1 = xAxis.getPixelForTick(startIdx);
                     const x2 = xAxis.getPixelForTick(endIdx);
                     if (!isFinite(x1) || !isFinite(x2)) return;
                     const left = Math.min(x1, x2);
-                    const width = Math.max(4, Math.abs(x2 - x1));
+                    const width = Math.max(8, Math.abs(x2 - x1));
                     ctx2.save();
-                    ctx2.fillStyle = 'rgba(245, 180, 70, 0.28)';
+                    ctx2.fillStyle = 'rgba(255, 220, 0, 0.40)';
                     ctx2.fillRect(left, area.top, width, area.bottom - area.top);
-                    ctx2.strokeStyle = 'rgba(217, 140, 40, 0.45)';
-                    ctx2.lineWidth = 1;
+                    ctx2.restore();
+                });
+            },
+            afterDatasetsDraw: function (chart) {
+                if (!chart.canvas || chart.canvas.id !== 'chart') return;
+                const xAxis = chart.scales['x-axis-0'];
+                const area = chart.chartArea;
+                if (!xAxis || !area) return;
+                const labels = chart.data.labels || [];
+                const ctx2 = chart.chart.ctx;
+                mergePeakHourRanges(Object.keys(peakHourSet).map(Number)).forEach(function (range) {
+                    const startIdx = range.start * 3;
+                    const endIdx = Math.min((range.end + 1) * 3, labels.length - 1);
+                    if (startIdx >= labels.length || startIdx < 0) return;
+                    const x1 = xAxis.getPixelForTick(startIdx);
+                    const x2 = xAxis.getPixelForTick(endIdx);
+                    if (!isFinite(x1) || !isFinite(x2)) return;
+                    const left = Math.min(x1, x2);
+                    const width = Math.max(8, Math.abs(x2 - x1));
+                    ctx2.save();
+                    // fill の上に薄い黄色を重ね、ベージュ化を防ぐ
+                    ctx2.fillStyle = 'rgba(255, 235, 59, 0.35)';
+                    ctx2.fillRect(left, area.top, width, area.bottom - area.top);
+                    ctx2.strokeStyle = 'rgba(255, 193, 7, 0.95)';
+                    ctx2.lineWidth = 2;
                     ctx2.beginPath();
                     ctx2.moveTo(left, area.top);
                     ctx2.lineTo(left, area.bottom);
@@ -421,6 +515,7 @@ include_once __DIR__ . '/header.php';
                     ctx2.stroke();
                     ctx2.restore();
                 });
+                syncPeakBandOverlay(chart);
             }
         });
     }

@@ -91,7 +91,7 @@
     if (page === "chart") {
       await registerTool(modelContext, {
         name: "get_tide_summary",
-        description: "現在表示中の港・日付の潮回り、満潮干潮、日の出入、天気、釣時スコアの要約を返す。",
+        description: "現在表示中の港・日付の潮回り、満潮干潮、日の出入、天気、bite_score の要約を返す。",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, openWorldHint: false },
         execute: async function () {
@@ -128,14 +128,14 @@
 
       await registerTool(modelContext, {
         name: "get_tide_series",
-        description: "現在表示中の20分間隔潮位時系列と、必要なら時間別風速・釣時スコアを返す。",
+        description: "現在表示中の20分間隔潮位時系列と、必要なら時間別風速・bite_score を返す。",
         inputSchema: {
           type: "object",
           properties: {
             include_wind: { type: "boolean", description: "風速(m/s)配列を含めるか" },
             include_bite_score: {
               type: "boolean",
-              description: "釣時スコア（時間帯ごと）を含めるか。省略時 true",
+              description: "bite_score（時間帯ごと）を含めるか。省略時 true",
             },
           },
           additionalProperties: false,
