@@ -557,9 +557,15 @@ include_once __DIR__ . '/header.php';
                     </li>
                     <?php endforeach; ?>
                 </ul>
-                <p class="info-note"><?php echo htmlspecialchars((string)($currentTurn['source_label'] ?? '近似')); ?> — 精密値ではありません</p>
+                <p class="info-note"><?php echo htmlspecialchars((string)($currentTurn['source_label'] ?? '海保')); ?> — 海峡推算の参考（航海用ではない）</p>
+                <?php elseif (($currentTurn['source'] ?? '') === 'kaiho_unsupported'): ?>
+                <span class="tide-event-empty">海保未対応</span>
+                <p class="info-note"><?php echo htmlspecialchars((string)($currentTurn['note'] ?? 'この港は海保公開潮流地点に未対応です。')); ?></p>
                 <?php else: ?>
                 <span class="tide-event-empty">データなし</span>
+                <?php if (!empty($currentTurn['note'])): ?>
+                <p class="info-note"><?php echo htmlspecialchars((string)$currentTurn['note']); ?></p>
+                <?php endif; ?>
                 <?php endif; ?>
             </dd>
         </dl>
