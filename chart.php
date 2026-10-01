@@ -313,16 +313,33 @@ include_once __DIR__ . '/header.php';
         width: 100%;
     }
     .tide-event-item {
-        display: flex;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
         align-items: baseline;
-        justify-content: flex-end;
-        gap: 0.45rem;
-        line-height: 1.25;
+        column-gap: 0.5rem;
+        line-height: 1.3;
+        text-align: left;
+    }
+    .tide-event-item > .tide-event-time {
+        grid-column: 1;
+    }
+    .tide-event-item > .tide-event-dir {
+        grid-column: 2;
+        justify-self: start;
+    }
+    .tide-event-item > .tide-event-meta {
+        grid-column: 3;
+        justify-self: end;
+    }
+    /* 満潮・干潮は 時刻 | cm の2列 */
+    .tide-event-list.is-flood .tide-event-item,
+    .tide-event-list.is-edd .tide-event-item {
+        grid-template-columns: 1fr auto;
     }
     .tide-event-time {
         font-variant-numeric: tabular-nums;
         font-feature-settings: "tnum";
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         font-weight: 700;
         letter-spacing: -0.01em;
         color: #111827;
@@ -330,7 +347,7 @@ include_once __DIR__ . '/header.php';
     .tide-event-meta {
         font-size: 0.78rem;
         font-weight: 600;
-        color: #4b5563;
+        color: #4b5563 !important;
         font-variant-numeric: tabular-nums;
     }
     .tide-event-list.is-flood .tide-event-time { color: #b91c1c; }
@@ -364,7 +381,8 @@ include_once __DIR__ . '/header.php';
         flex: none;
     }
     .info-dl.is-block .info-dd {
-        text-align: right;
+        text-align: left;
+        width: 100%;
     }
 
     @media (max-width: 900px) {
@@ -399,9 +417,6 @@ include_once __DIR__ . '/header.php';
             border-bottom: 1px solid #eef2f7;
             margin-bottom: 0.55rem;
             padding-bottom: 0.5rem;
-        }
-        .tide-event-item {
-            justify-content: space-between;
         }
         .info-dl:not(.is-block) {
             align-items: center;
