@@ -198,46 +198,12 @@ include_once __DIR__ . '/header.php';
         z-index: 1;
     }
 
-    .chart-toolbar {
-        position: absolute;
-        left: 0.75rem;
-        top: 0.75rem;
-        z-index: 12;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-        align-items: center;
-    }
-    .chart-mode-btn {
-        border: 1px solid #cbd5e1;
-        background: rgba(255,255,255,0.92);
-        color: #334155;
-        border-radius: 999px;
-        padding: 0.35rem 0.75rem;
-        font-size: 0.78rem;
-        font-weight: 700;
-        cursor: pointer;
-    }
-    .chart-mode-btn.is-active {
-        background: #0f766e;
-        border-color: #0f766e;
-        color: #fff;
-    }
-    .chart-legend-hint {
-        font-size: 0.72rem;
-        color: #64748b;
-        background: rgba(255,255,255,0.88);
-        border: 1px solid #e2e8f0;
-        border-radius: 999px;
-        padding: 0.3rem 0.65rem;
-    }
-
     .tide-info-panel {
         position: absolute;
         right: 5rem;
         top: 1rem;
-        width: 248px;
-        background: rgba(255, 255, 255, 0.92);
+        width: 220px;
+        background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         border: 1px solid #ddd;
@@ -274,79 +240,71 @@ include_once __DIR__ . '/header.php';
     }
 
     .bite-score-block {
-        margin-top: 0.6rem;
-        padding-top: 0.6rem;
+        margin-top: 0.55rem;
+        padding-top: 0.55rem;
         border-top: 1px solid #eee;
         width: 100%;
     }
     .bite-score-title {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #0f766e;
-        margin: 0 0 0.25rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #64748b;
+        margin: 0 0 0.2rem;
     }
     .bite-score-peak {
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: #134e4a;
-        margin: 0 0 0.25rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-        align-items: baseline;
-    }
-    .bite-score-stars {
-        letter-spacing: 0.08em;
-        color: #d97706;
-        font-size: 1.05rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #475569;
+        margin: 0 0 0.2rem;
     }
     .bite-score-note {
-        font-size: 0.7rem;
-        line-height: 1.35;
-        color: #64748b;
+        font-size: 0.65rem;
+        line-height: 1.3;
+        color: #94a3b8;
         margin: 0;
     }
     .bite-hour-strip {
         display: grid;
         grid-template-columns: repeat(12, minmax(0, 1fr));
-        gap: 3px;
-        margin-top: 0.5rem;
+        gap: 2px;
+        margin-top: 0.4rem;
     }
     .bite-hour-cell {
         text-align: center;
-        font-size: 0.58rem;
+        font-size: 0.55rem;
         line-height: 1.15;
-        color: #334155;
-        border-radius: 4px;
-        padding: 0.2rem 0.05rem;
+        color: #64748b;
+        border-radius: 3px;
+        padding: 0.15rem 0.02rem;
         border: 1px solid transparent;
-        background: #f1f5f9;
+        background: #f8fafc;
     }
     .bite-hour-cell strong {
         display: block;
-        font-size: 0.62rem;
-        color: #0f766e;
+        font-size: 0.58rem;
+        font-weight: 600;
+        color: #64748b;
     }
     .bite-hour-cell .bite-cell-stars {
         display: block;
-        color: #d97706;
-        font-size: 0.55rem;
-        letter-spacing: -0.05em;
-        min-height: 0.7rem;
+        color: #a8a29e;
+        font-size: 0.5rem;
+        letter-spacing: -0.06em;
+        min-height: 0.65rem;
     }
     .bite-hour-cell.is-peak {
-        border-color: #f59e0b;
-        box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+        border-color: rgba(214, 181, 110, 0.55);
+        background: #faf6ef;
     }
     .bite-hour-cell.is-peak strong {
-        color: #b45309;
+        color: #78716c;
     }
-    .bite-hour-cell.lvl-0 { background: #f8fafc; }
-    .bite-hour-cell.lvl-1 { background: #ecfdf5; }
-    .bite-hour-cell.lvl-2 { background: #d1fae5; }
-    .bite-hour-cell.lvl-3 { background: #fef3c7; }
-    .bite-hour-cell.lvl-4 { background: #fde68a; }
-    .bite-hour-cell.lvl-5 { background: #fbbf24; }
+    .bite-hour-cell.lvl-0,
+    .bite-hour-cell.lvl-1 { background: #f8fafc; }
+    .bite-hour-cell.lvl-2 { background: #f1f5f9; }
+    .bite-hour-cell.lvl-3 { background: #f5f0e8; }
+    .bite-hour-cell.lvl-4,
+    .bite-hour-cell.lvl-5 { background: #f3ebe0; }
 
     @media (max-width: 900px) {
         .top-header {
@@ -369,9 +327,6 @@ include_once __DIR__ . '/header.php';
             position: relative;
             height: 52vh;
             min-height: 280px;
-        }
-        .chart-toolbar {
-            position: absolute;
         }
         .tide-info-panel {
             position: relative;
@@ -435,11 +390,6 @@ include_once __DIR__ . '/header.php';
 
 <div class="content-wrap">
     <div class="chart-container">
-        <div class="chart-toolbar" role="group" aria-label="チャート表示切替">
-            <button type="button" class="chart-mode-btn is-active" data-chart-mode="standard" id="chartModeStandard">標準</button>
-            <button type="button" class="chart-mode-btn" data-chart-mode="bite" id="chartModeBite">釣時強調</button>
-            <span class="chart-legend-hint">帯 = ピーク帯 / ★ = 釣時スコア</span>
-        </div>
         <canvas id="chart"></canvas>
     </div>
 
@@ -495,14 +445,11 @@ include_once __DIR__ . '/header.php';
         <div class="bite-score-block">
             <p class="bite-score-title"><?php echo htmlspecialchars((string)$biteScore['name'], ENT_QUOTES, 'UTF-8'); ?></p>
             <p class="bite-score-peak">
-                <span>ピーク <?php echo htmlspecialchars((string)$bitePeak['time'], ENT_QUOTES, 'UTF-8'); ?></span>
-                <span class="bite-score-stars" aria-label="<?php echo (int)$bitePeak['stars']; ?>つ星"><?php
-                    $peakStars = (int)($bitePeak['stars'] ?? 0);
-                    echo str_repeat('★', $peakStars) . str_repeat('☆', max(0, 5 - $peakStars));
-                ?></span>
-                <span style="font-weight:700;color:#0f766e;"><?php echo number_format((float)$bitePeak['score'], 1); ?></span>
+                ピーク <?php echo htmlspecialchars((string)$bitePeak['time'], ENT_QUOTES, 'UTF-8'); ?>
+                · <?php echo number_format((float)$bitePeak['score'], 1); ?>
+                （★<?php echo (int)($bitePeak['stars'] ?? 0); ?>）
             </p>
-            <p class="bite-score-note"><?php echo htmlspecialchars((string)($biteScore['description'] ?? ''), ENT_QUOTES, 'UTF-8'); ?> ★1＝1.0</p>
+            <p class="bite-score-note">潮位グラフの薄帯がピーク帯。詳細は下の時間帯一覧。★1＝1.0</p>
             <div class="bite-hour-strip" aria-label="時間帯ごとの釣時スコア">
                 <?php foreach (($biteScore['hourly'] ?? []) as $row): ?>
                     <?php
@@ -523,7 +470,7 @@ include_once __DIR__ . '/header.php';
                         );
                     ?>">
                         <?php echo sprintf('%02d', (int)$row['hour']); ?>
-                        <span class="bite-cell-stars"><?php echo $cellStars > 0 ? str_repeat('★', $cellStars) : '·'; ?></span>
+                        <span class="bite-cell-stars"><?php echo $cellStars > 0 ? str_repeat('★', min(3, $cellStars)) : '·'; ?></span>
                         <strong><?php echo number_format((float)$row['score'], 1); ?></strong>
                     </div>
                 <?php endforeach; ?>
@@ -564,34 +511,6 @@ include_once __DIR__ . '/header.php';
     const peakHourSet = {};
     (bite_peak_hours || []).forEach(function (h) { peakHourSet[h] = true; });
 
-    const mapped_bite_score = tide_time.map(function (time, index) {
-        if (index % 3 !== 0) return null;
-        let hour = index / 3;
-        if (hour >= 24) hour = 23;
-        const row = biteByHour[hour];
-        return row ? row.score : null;
-    });
-    const bitePointRadius = tide_time.map(function (time, index) {
-        if (index % 3 !== 0) return 0;
-        let hour = index / 3;
-        if (hour >= 24) hour = 23;
-        const row = biteByHour[hour];
-        if (!row) return 0;
-        return 3 + (Number(row.stars) || 0) * 1.4;
-    });
-    const bitePointColors = tide_time.map(function (time, index) {
-        if (index % 3 !== 0) return 'rgba(0,0,0,0)';
-        let hour = index / 3;
-        if (hour >= 24) hour = 23;
-        const row = biteByHour[hour];
-        if (!row) return '#d97706';
-        const s = Number(row.stars) || 0;
-        if (s >= 4) return '#b45309';
-        if (s >= 3) return '#d97706';
-        if (s >= 2) return '#f59e0b';
-        return '#fbbf24';
-    });
-
     Chart.defaults.global.defaultFontColor = '#333';
     Chart.defaults.global.defaultFontFamily = "'Inter', 'Noto Sans JP', sans-serif";
     
@@ -602,7 +521,7 @@ include_once __DIR__ . '/header.php';
         return '★'.repeat(n) + '☆'.repeat(5 - n);
     };
 
-    // Chart.js 2.7: ピーク帯ハイライト
+    // Chart.js 2.7: ピーク帯のみ（薄い縦ゾーン）。スコア線は描かず潮位を主役に保つ
     Chart.pluginService.register({
         beforeDatasetsDraw: function (chart) {
             if (!chart.canvas || chart.canvas.id !== 'chart') return;
@@ -619,49 +538,22 @@ include_once __DIR__ . '/header.php';
                 const x1 = xAxis.getPixelForTick(startIdx);
                 const x2 = xAxis.getPixelForTick(endIdx);
                 ctx2.save();
-                ctx2.fillStyle = 'rgba(251, 191, 36, 0.18)';
+                ctx2.fillStyle = 'rgba(214, 181, 110, 0.12)';
                 ctx2.fillRect(x1, yAxis.top, Math.max(2, x2 - x1), yAxis.bottom - yAxis.top);
                 ctx2.restore();
             });
         }
     });
 
-    let chartMode = 'standard';
-
-    const applyChartMode = function (chart, mode, shouldUpdate) {
-        chartMode = mode;
-        const tide = chart.data.datasets[0];
-        const wind = chart.data.datasets[1];
-        const bite = chart.data.datasets[2];
-        const narrow = window.innerWidth < 768;
-        if (mode === 'bite') {
-            tide.borderWidth = narrow ? 1.5 : 3;
-            tide.backgroundColor = 'rgba(169, 227, 255, 0.18)';
-            wind.borderWidth = 1.5;
-            wind.borderColor = 'rgba(46, 204, 113, 0.45)';
-            bite.borderWidth = narrow ? 3 : 4.5;
-            bite.borderDash = [];
-            bite.borderColor = '#b45309';
-            chart.options.scales.yAxes[1].display = false;
-            chart.options.scales.yAxes[2].display = true;
-            chart.options.scales.yAxes[2].scaleLabel.display = true;
+    const adjustStyles = function (chart, width) {
+        if (width < 768) {
+            chart.data.datasets[0].borderWidth = 2;
+            chart.data.datasets[0].pointHoverBorderWidth = 3;
+            if (chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 2;
         } else {
-            tide.borderWidth = narrow ? 2 : 7;
-            tide.backgroundColor = 'rgba(169, 227, 255, 0.5)';
-            wind.borderWidth = narrow ? 2 : 3;
-            wind.borderColor = '#2ecc71';
-            bite.borderWidth = narrow ? 2.5 : 3.5;
-            bite.borderDash = [2, 3];
-            bite.borderColor = '#d97706';
-            chart.options.scales.yAxes[1].display = true;
-            chart.options.scales.yAxes[2].display = false;
-            chart.options.scales.yAxes[2].scaleLabel.display = false;
-        }
-        document.querySelectorAll('.chart-mode-btn').forEach(function (btn) {
-            btn.classList.toggle('is-active', btn.getAttribute('data-chart-mode') === mode);
-        });
-        if (shouldUpdate !== false) {
-            chart.update();
+            chart.data.datasets[0].borderWidth = 7;
+            chart.data.datasets[0].pointHoverBorderWidth = 10;
+            if (chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 3;
         }
     };
     
@@ -696,58 +588,28 @@ include_once __DIR__ . '/header.php';
                     borderWidth: 3,
                     pointRadius: 2,
                     pointHoverRadius: 4,
-                },
-                {
-                    label: '釣時スコア ★',
-                    yAxisID: 'y-axis-3',
-                    data: mapped_bite_score,
-                    fill: false,
-                    spanGaps: true,
-                    borderColor: '#d97706',
-                    backgroundColor: '#d97706',
-                    borderDash: [2, 3],
-                    lineTension: 0.25,
-                    borderWidth: 3.5,
-                    pointRadius: bitePointRadius,
-                    pointHoverRadius: 8,
-                    pointBackgroundColor: bitePointColors,
-                    pointBorderColor: '#92400e',
-                    pointBorderWidth: 1,
                 }
             ],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            onResize: function (chart) {
-                applyChartMode(chart, chartMode, false);
+            onResize: function (chart, size) {
+                adjustStyles(chart, size.width);
+                chart.update();
             },
             tooltips: {
                 mode: 'index',
                 intersect: false,
-                titleFontSize: 13,
-                bodyFontSize: 12,
                 callbacks: {
-                    title: function (items) {
+                    afterBody: function (items) {
                         if (!items || !items.length) return '';
                         const idx = items[0].index;
                         let hour = Math.floor(idx / 3);
                         if (hour >= 24) hour = 23;
                         const row = biteByHour[hour];
-                        const base = items[0].xLabel || '';
-                        if (!row) return base;
-                        return base + '  /  釣時 ' + starLabel(row.stars) + ' (' + Number(row.score).toFixed(1) + ')';
-                    },
-                    label: function (tooltipItem, data) {
-                        const ds = data.datasets[tooltipItem.datasetIndex];
-                        const val = tooltipItem.yLabel;
-                        if (ds.yAxisID === 'y-axis-3') {
-                            let hour = Math.floor(tooltipItem.index / 3);
-                            if (hour >= 24) hour = 23;
-                            const row = biteByHour[hour];
-                            return '釣時スコア: ' + Number(val).toFixed(1) + ' ' + starLabel(row ? row.stars : 0);
-                        }
-                        return ds.label + ': ' + val;
+                        if (!row) return '';
+                        return '釣時 ' + Number(row.score).toFixed(1) + ' ' + starLabel(row.stars);
                     }
                 }
             },
@@ -756,8 +618,6 @@ include_once __DIR__ . '/header.php';
                 position: 'bottom',
                 labels: {
                     usePointStyle: true,
-                    boxWidth: 10,
-                    fontSize: 11,
                 }
             },
             scales: {
@@ -766,18 +626,12 @@ include_once __DIR__ . '/header.php';
                         autoSkip: false,
                         maxRotation: 0,
                         minRotation: 0,
-                        fontSize: 11,
-                        fontStyle: 'bold',
                         callback: function (value, index) {
-                            // 3時間ごと + 24:00
                             if (index % 9 === 0 || index === tide_time.length - 1) {
                                 return value;
                             }
                             return '';
                         }
-                    },
-                    gridLines: {
-                        color: 'rgba(226, 232, 240, 0.7)'
                     }
                 }],
                 yAxes: [
@@ -807,41 +661,14 @@ include_once __DIR__ . '/header.php';
                             display: true,
                             labelString: '風速 (m/s)'
                         }
-                    },
-                    {
-                        id: 'y-axis-3',
-                        type: 'linear',
-                        position: 'right',
-                        display: false,
-                        ticks: {
-                            min: 0,
-                            max: 5,
-                            stepSize: 1,
-                            beginAtZero: true,
-                            callback: function (v) {
-                                return v + '★';
-                            }
-                        },
-                        scaleLabel: {
-                            display: false,
-                            labelString: '釣時スコア'
-                        },
-                        gridLines: {
-                            drawOnChartArea: false,
-                        }
                     }
                 ]
             }
         }
     });
 
-    applyChartMode(myChart, 'standard');
-
-    document.querySelectorAll('.chart-mode-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            applyChartMode(myChart, btn.getAttribute('data-chart-mode') || 'standard', true);
-        });
-    });
+    adjustStyles(myChart, window.innerWidth);
+    myChart.update();
 </script>
 </body>
 </html>
