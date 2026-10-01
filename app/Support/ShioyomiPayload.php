@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Services\BiteScoreService;
 use App\Services\CalendarService;
+use App\Services\CurrentTurnService;
 use App\Services\TideGraphService;
 use App\Services\WeatherService;
 use Carbon\Carbon;
@@ -112,6 +113,11 @@ class ShioyomiPayload
             $payload['sun'],
             is_array($windSpeedMs) ? $windSpeedMs : null,
             is_array($pressureHpa) ? $pressureHpa : null
+        );
+
+        $payload['current_turn'] = CurrentTurnService::compute(
+            $payload['flood'],
+            $payload['edd']
         );
 
         $payload['summary_text'] = self::buildTideSummaryText($payload);
@@ -259,9 +265,24 @@ class ShioyomiPayload
             )
             : '天気データなし。';
 
+        $turn = $payload['current_turn'] ?? null;
+        $turnText = '転流 データなし。';
+        if (is_array($turn) && !empty($turn['available']) && !empty($turn['events'])) {
+            $parts = [];
+            foreach ($turn['events'] as $event) {
+                $parts[] = sprintf(
+                    '%s %s（%s）',
+                    $event['time'] ?? '-',
+                    $event['direction'] ?? '',
+                    $event['label'] ?? '近似'
+                );
+            }
+            $turnText = '転流（' . ($turn['source_label'] ?? '近似') . '） ' . implode('、', $parts) . '。';
+        }
+
         // UI / ページ HTML 向け要約にはスコア名称を含めない（数値は bite_score フィールドで提供）
         return sprintf(
-            '%s（%s）の %s。潮回りは%s。日の出 %s、日の入 %s。満潮 %s。干潮 %s。%s',
+            '%s（%s）の %s。潮回りは%s。日の出 %s、日の入 %s。満潮 %s。干潮 %s。%s%s',
             $payload['place']['harbor_name'] ?? $payload['place']['name'],
             '都道府県' . $payload['place']['prefecture'] . '/港' . $payload['place']['code'],
             $payload['date'],
@@ -270,6 +291,7 @@ class ShioyomiPayload
             $payload['sun']['set'] ?? '-',
             $flood,
             $edd,
+            $turnText,
             $weatherText
         );
     }

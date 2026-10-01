@@ -104,6 +104,8 @@
 | [tide736.net](https://tide736.net/)   | 潮汐データ（潮位・満潮干潮時刻・潮回り・日の出日の入り） |
 | [Open-Meteo](https://open-meteo.com/) | 天気予報・気温・風速                                     |
 
+転流（`current_turn`）は tide736 にフィールドがないため、満潮・干潮時刻に基づく**近似**を明示ラベル付きで API / 右パネルに掲載する（海峡の精密転流時刻ではない）。
+
 ## ディレクトリ構成
 
 ```
@@ -118,7 +120,9 @@
 │   ├── Services/
 │   │   ├── TideGraphService.php   # 潮汐 API 連携
 │   │   ├── CalendarService.php    # 月間潮汐データ取得
-│   │   └── WeatherService.php     # 天気 API 連携
+│   │   ├── WeatherService.php     # 天気 API 連携
+│   │   ├── BiteScoreService.php   # 釣時スコア
+│   │   └── CurrentTurnService.php # 転流（満干潮近似）
 │   └── UseCases/          # ユースケース（日付取得など）
 ├── assets/                # CSS / JS / 画像
 ├── Dockerfile             # PHP 8.0 + Apache イメージ

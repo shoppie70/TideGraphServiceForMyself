@@ -256,25 +256,28 @@ include_once __DIR__ . '/header.php';
 
     .tide-info-panel {
         position: static;
-        flex: 0 0 260px;
-        width: 260px;
+        flex: 0 0 280px;
+        width: 280px;
         max-width: 100%;
         background: #fff;
         border-left: 1px solid #e5e7eb;
         border-radius: 0;
-        padding: 1rem;
+        padding: 1rem 1rem 1.15rem;
         box-shadow: none;
         max-height: calc(100svh - 60px);
         overflow: auto;
         box-sizing: border-box;
+        color: #111827;
     }
 
     .info-dl {
         display: flex;
-        margin-bottom: 0.4rem;
-        font-size: 0.85rem;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 0.3rem;
+        align-items: baseline;
+        gap: 0.75rem;
+        margin: 0 0 0.65rem;
+        font-size: 0.875rem;
+        border-bottom: 1px solid #eef2f7;
+        padding-bottom: 0.55rem;
     }
     .info-dl:last-child {
         border-bottom: none;
@@ -283,14 +286,114 @@ include_once __DIR__ . '/header.php';
     }
     .info-dt {
         font-weight: 600;
-        width: 35%;
-        color: #666;
+        width: 4.5rem;
+        flex: 0 0 4.5rem;
+        color: #374151;
+        letter-spacing: 0.02em;
     }
     .info-dd {
         text-align: right;
-        width: 65%;
+        flex: 1 1 auto;
         margin: 0;
         font-weight: 700;
+        color: #111827;
+        min-width: 0;
+    }
+    .info-dd.is-moon { color: #1d4ed8; }
+    .info-dd.is-sunset { color: #c2410c; }
+
+    /* 満潮・干潮・転流: 時刻を主、数値/向きを副（Pro Max: hierarchy + contrast） */
+    .tide-event-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        width: 100%;
+    }
+    .tide-event-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: baseline;
+        column-gap: 0.5rem;
+        line-height: 1.3;
+        text-align: left;
+    }
+    .tide-event-item > .tide-event-time {
+        grid-column: 1;
+    }
+    .tide-event-item > .tide-event-dir {
+        grid-column: 2;
+        justify-self: start;
+    }
+    .tide-event-item > .tide-event-meta {
+        grid-column: 3;
+        justify-self: end;
+    }
+    /* 満潮・干潮: 時刻（主）の直後に cm（副） */
+    .tide-event-list.is-flood .tide-event-item,
+    .tide-event-list.is-edd .tide-event-item {
+        display: flex;
+        justify-content: flex-start;
+        align-items: baseline;
+        gap: 0.55rem;
+    }
+    .tide-event-list.is-turn .tide-event-item {
+        grid-template-columns: auto auto 1fr;
+        column-gap: 0.4rem;
+    }
+    .tide-event-list.is-turn .tide-event-item > .tide-event-meta {
+        justify-self: start;
+        color: #6b7280 !important;
+    }
+    .tide-event-time {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum";
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #111827;
+    }
+    .tide-event-meta {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #4b5563 !important;
+        font-variant-numeric: tabular-nums;
+    }
+    .tide-event-list.is-flood .tide-event-time { color: #b91c1c; }
+    .tide-event-list.is-edd .tide-event-time { color: #1d4ed8; }
+    .tide-event-list.is-turn .tide-event-time { color: #0f766e; }
+    .tide-event-dir {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #0f766e;
+    }
+    .tide-event-empty {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+    }
+    .info-note {
+        margin: 0.15rem 0 0;
+        font-size: 0.7rem;
+        font-weight: 500;
+        line-height: 1.35;
+        color: #6b7280;
+        text-align: right;
+    }
+    .info-dl.is-block {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.35rem;
+    }
+    .info-dl.is-block .info-dt {
+        width: auto;
+        flex: none;
+    }
+    .info-dl.is-block .info-dd {
+        text-align: left;
+        width: 100%;
     }
 
     @media (max-width: 900px) {
@@ -319,12 +422,18 @@ include_once __DIR__ . '/header.php';
             max-height: none;
             border-left: none;
             border-top: 1px solid #e5e7eb;
-            padding: 0.75rem 1rem 1.25rem;
+            padding: 0.85rem 1rem 1.35rem;
         }
         .info-dl {
-            border-bottom: 1px solid #eee;
-            margin-bottom: 0.35rem;
-            padding-bottom: 0.3rem;
+            border-bottom: 1px solid #eef2f7;
+            margin-bottom: 0.55rem;
+            padding-bottom: 0.5rem;
+        }
+        .info-dl:not(.is-block) {
+            align-items: center;
+        }
+        .info-dl:not(.is-block) .info-dd {
+            text-align: right;
         }
     }
 </style>
@@ -380,9 +489,18 @@ include_once __DIR__ . '/header.php';
         }
         echo PageEmbed::renderMachineReadableSummary($uiSummary, '潮汐情報の要約');
         ?>
+        <?php
+        $currentTurn = $shioyomi['current_turn'] ?? ['available' => false, 'events' => [], 'source_label' => 'データなし', 'note' => ''];
+        $formatCm = static function ($cm): string {
+            if ($cm === null || $cm === '') {
+                return '-';
+            }
+            return rtrim(rtrim(number_format((float)$cm, 1, '.', ''), '0'), '.') . 'cm';
+        };
+        ?>
         <dl class="info-dl">
             <dt class="info-dt">潮回り</dt>
-            <dd class="info-dd" style="color: #2980b9;"><?php echo htmlspecialchars($tide_data_array['moon']['title'] ?? ''); ?></dd>
+            <dd class="info-dd is-moon"><?php echo htmlspecialchars($tide_data_array['moon']['title'] ?? ''); ?></dd>
         </dl>
         <dl class="info-dl">
             <dt class="info-dt">日の出</dt>
@@ -390,30 +508,59 @@ include_once __DIR__ . '/header.php';
         </dl>
         <dl class="info-dl">
             <dt class="info-dt">日の入</dt>
-            <dd class="info-dd" style="color: #e67e22;"><?php echo htmlspecialchars($tide_data_array['sun']['set'] ?? '-'); ?></dd>
+            <dd class="info-dd is-sunset"><?php echo htmlspecialchars($tide_data_array['sun']['set'] ?? '-'); ?></dd>
         </dl>
-        <dl class="info-dl">
+        <dl class="info-dl is-block">
             <dt class="info-dt">満潮</dt>
-            <dd class="info-dd" style="color: #e74c3c;">
-                <?php 
-                $floods = [];
-                foreach ($tide_data_array['flood'] as $flood) {
-                    $floods[] = $flood['time'] . ' (' . $flood['cm'] . 'cm)';
-                }
-                echo implode(', ', $floods) ?: '-';
-                ?>
+            <dd class="info-dd">
+                <?php if (!empty($tide_data_array['flood'])): ?>
+                <ul class="tide-event-list is-flood">
+                    <?php foreach ($tide_data_array['flood'] as $flood): ?>
+                    <li class="tide-event-item">
+                        <span class="tide-event-time"><?php echo htmlspecialchars((string)($flood['time'] ?? '-')); ?></span>
+                        <span class="tide-event-meta"><?php echo htmlspecialchars($formatCm($flood['cm'] ?? null)); ?></span>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php else: ?>
+                <span class="tide-event-empty">データなし</span>
+                <?php endif; ?>
             </dd>
         </dl>
-        <dl class="info-dl">
+        <dl class="info-dl is-block">
             <dt class="info-dt">干潮</dt>
-            <dd class="info-dd" style="color: #3498db;">
-                <?php 
-                $edds = [];
-                foreach ($tide_data_array['edd'] as $edd) {
-                    $edds[] = $edd['time'] . ' (' . $edd['cm'] . 'cm)';
-                }
-                echo implode(', ', $edds) ?: '-';
-                ?>
+            <dd class="info-dd">
+                <?php if (!empty($tide_data_array['edd'])): ?>
+                <ul class="tide-event-list is-edd">
+                    <?php foreach ($tide_data_array['edd'] as $edd): ?>
+                    <li class="tide-event-item">
+                        <span class="tide-event-time"><?php echo htmlspecialchars((string)($edd['time'] ?? '-')); ?></span>
+                        <span class="tide-event-meta"><?php echo htmlspecialchars($formatCm($edd['cm'] ?? null)); ?></span>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php else: ?>
+                <span class="tide-event-empty">データなし</span>
+                <?php endif; ?>
+            </dd>
+        </dl>
+        <dl class="info-dl is-block">
+            <dt class="info-dt">転流</dt>
+            <dd class="info-dd">
+                <?php if (!empty($currentTurn['available']) && !empty($currentTurn['events'])): ?>
+                <ul class="tide-event-list is-turn">
+                    <?php foreach ($currentTurn['events'] as $turnEvent): ?>
+                    <li class="tide-event-item">
+                        <span class="tide-event-time"><?php echo htmlspecialchars((string)($turnEvent['time'] ?? '-')); ?></span>
+                        <span class="tide-event-dir"><?php echo htmlspecialchars((string)($turnEvent['direction'] ?? '')); ?></span>
+                        <span class="tide-event-meta"><?php echo htmlspecialchars((string)($turnEvent['label'] ?? '')); ?></span>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                <p class="info-note"><?php echo htmlspecialchars((string)($currentTurn['source_label'] ?? '近似')); ?> — 精密値ではありません</p>
+                <?php else: ?>
+                <span class="tide-event-empty">データなし</span>
+                <?php endif; ?>
             </dd>
         </dl>
     </section>

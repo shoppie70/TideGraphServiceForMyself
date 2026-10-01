@@ -2,3 +2,13 @@
 .DS_Store
 .user.ini
 mcp-server/node_modules/
+
+# UI UX Pro Max generated caches
+.cursor/skills/ui-ux-pro-max/scripts/__pycache__/
+
+.cursor/skills/slides/
+.cursor/skills/brand/
+.cursor/skills/design/
+.cursor/skills/design-system/
+.cursor/skills/ui-styling/
+.cursor/skills/banner-design/
