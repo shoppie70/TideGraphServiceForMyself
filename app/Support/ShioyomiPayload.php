@@ -98,8 +98,10 @@ class ShioyomiPayload
         }
 
         $windSpeedMs = null;
-        if (is_array($payload['weather'] ?? null) && isset($payload['weather']['wind_speed_ms'])) {
-            $windSpeedMs = $payload['weather']['wind_speed_ms'];
+        $pressureHpa = null;
+        if (is_array($payload['weather'] ?? null)) {
+            $windSpeedMs = $payload['weather']['wind_speed_ms'] ?? null;
+            $pressureHpa = $payload['weather']['pressure_hpa'] ?? null;
         }
 
         $payload['bite_score'] = BiteScoreService::compute(
@@ -108,7 +110,8 @@ class ShioyomiPayload
             $payload['edd'],
             $payload['moon'],
             $payload['sun'],
-            $windSpeedMs
+            is_array($windSpeedMs) ? $windSpeedMs : null,
+            is_array($pressureHpa) ? $pressureHpa : null
         );
 
         $payload['summary_text'] = self::buildTideSummaryText($payload);
@@ -238,6 +241,7 @@ class ShioyomiPayload
             'temp_max' => $weather['temp_max'] ?? null,
             'temp_min' => $weather['temp_min'] ?? null,
             'wind_speed_ms' => $weather['wind_speed'] ?? [],
+            'pressure_hpa' => $weather['surface_pressure'] ?? [],
         ];
     }
 

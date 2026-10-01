@@ -118,6 +118,7 @@
                   description: bite.description,
                   scale: bite.scale,
                   day_peak: bite.day_peak,
+                  peak_hours: bite.peak_hours || [],
                 }
               : null,
             summary_text: current.summary_text,
