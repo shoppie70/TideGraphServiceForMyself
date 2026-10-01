@@ -24,7 +24,7 @@ class WeatherService
             'latitude' => $this->lat,
             'longitude' => $this->lng,
             'daily' => 'weathercode,temperature_2m_max,temperature_2m_min',
-            'hourly' => 'wind_speed_10m',
+            'hourly' => 'wind_speed_10m,surface_pressure',
             'timezone' => 'Asia/Tokyo',
             'wind_speed_unit' => 'ms',
             'start_date' => $this->date,
@@ -55,6 +55,7 @@ class WeatherService
         $temp_min = $array['daily']['temperature_2m_min'][0] ?? null;
         
         $wind_speed = $array['hourly']['wind_speed_10m'] ?? [];
+        $surface_pressure = $array['hourly']['surface_pressure'] ?? [];
 
         return [
             'status' => 200,
@@ -64,6 +65,7 @@ class WeatherService
             'temp_max' => $temp_max,
             'temp_min' => $temp_min,
             'wind_speed' => $wind_speed,
+            'surface_pressure' => $surface_pressure,
         ];
     }
 

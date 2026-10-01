@@ -118,7 +118,7 @@ include_once __DIR__ . '/header.php';
         font-family: 'Inter', 'Noto Sans JP', sans-serif;
         background-color: #ffffff;
         color: #333;
-        overflow: hidden;
+        overflow: auto;
     }
 
     .top-header {
@@ -184,33 +184,89 @@ include_once __DIR__ . '/header.php';
     }
 
     .content-wrap {
-        position: relative;
-        height: calc(100svh - 60px);
-        width: 100vw;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        width: 100%;
+        min-height: calc(100svh - 60px);
+        box-sizing: border-box;
     }
 
     .chart-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 420px;
+        height: calc(100svh - 60px);
+    }
+    .chart-container canvas {
+        position: relative;
         z-index: 1;
+        background: transparent;
+    }
+    /* canvas の背後にも黄色い縦帯（透明部分から見える保険） */
+    .peak-band-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .peak-band-layer .peak-band {
+        position: absolute;
+        background: rgba(255, 235, 59, 0.45);
+        border-left: 2px solid rgba(255, 193, 7, 0.95);
+        border-right: 2px solid rgba(255, 193, 7, 0.95);
+        box-sizing: border-box;
+    }
+    /* 時間帯ごとの活性★（チャート上レイヤ。軸は増やさない） */
+    .bite-star-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .bite-star-layer .bite-star-col {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        line-height: 1.05;
+        font-size: 11px;
+        font-weight: 700;
+        color: #d97706;
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.95), 0 1px 0 rgba(255, 255, 255, 0.8);
+        transform: translateX(-50%);
+        white-space: nowrap;
+    }
+    .bite-star-layer .bite-star-col.is-peak {
+        color: #b45309;
+        font-size: 12px;
+    }
+    @media (max-width: 768px) {
+        .bite-star-layer .bite-star-col {
+            font-size: 9px;
+        }
+        .bite-star-layer .bite-star-col.is-peak {
+            font-size: 10px;
+        }
     }
 
     .tide-info-panel {
-        position: absolute;
-        right: 5rem;
-        top: 1rem;
-        width: 220px;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        position: static;
+        flex: 0 0 260px;
+        width: 260px;
+        max-width: 100%;
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        border-radius: 0;
         padding: 1rem;
-        z-index: 10;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: none;
+        max-height: calc(100svh - 60px);
+        overflow: auto;
+        box-sizing: border-box;
     }
 
     .info-dl {
@@ -249,27 +305,26 @@ include_once __DIR__ . '/header.php';
             justify-content: center;
         }
         .content-wrap {
-            height: calc(100svh - 130px);
+            flex-direction: column;
+            min-height: 0;
+        }
+        .chart-container {
+            width: 100%;
+            height: 52vh;
+            min-height: 280px;
         }
         .tide-info-panel {
-            width: calc(100% - 2rem);
-            top: auto;
-            bottom: 0.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            padding: 0.5rem;
+            flex: 0 0 auto;
+            width: 100%;
+            max-height: none;
+            border-left: none;
+            border-top: 1px solid #e5e7eb;
+            padding: 0.75rem 1rem 1.25rem;
         }
         .info-dl {
-            border: none;
-            flex: 1 1 45%;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            overflow: auto;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 0.35rem;
+            padding-bottom: 0.3rem;
         }
     }
 </style>
@@ -310,11 +365,21 @@ include_once __DIR__ . '/header.php';
 
 <div class="content-wrap">
     <div class="chart-container">
+        <div id="peak-band-layer" class="peak-band-layer" aria-hidden="true"></div>
         <canvas id="chart"></canvas>
+        <div id="bite-star-layer" class="bite-star-layer" aria-hidden="true"></div>
     </div>
 
     <section class="tide-info-panel" aria-label="潮汐情報">
-        <?php echo PageEmbed::renderMachineReadableSummary($shioyomi['summary_text'], '潮汐情報の要約'); ?>
+        <?php
+        // ページ HTML にスコア名称が一切出ないよう埋め込み用ペイロードをサニタイズ
+        $uiSummary = $shioyomi['summary_text'] ?? '';
+        $embedPayload = $shioyomi;
+        if (isset($embedPayload['bite_score']) && is_array($embedPayload['bite_score'])) {
+            unset($embedPayload['bite_score']['name'], $embedPayload['bite_score']['description']);
+        }
+        echo PageEmbed::renderMachineReadableSummary($uiSummary, '潮汐情報の要約');
+        ?>
         <dl class="info-dl">
             <dt class="info-dt">潮回り</dt>
             <dd class="info-dd" style="color: #2980b9;"><?php echo htmlspecialchars($tide_data_array['moon']['title'] ?? ''); ?></dd>
@@ -354,13 +419,15 @@ include_once __DIR__ . '/header.php';
     </section>
 </div>
 
-<?php echo PageEmbed::renderScriptTag($shioyomi); ?>
+<?php echo PageEmbed::renderScriptTag($embedPayload); ?>
 <script src="<?php echo htmlspecialchars(Site::path('assets/js/app.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="<?php echo htmlspecialchars(Site::path('assets/js/webmcp.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="<?php echo htmlspecialchars(Site::path('assets/js/pwa.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
     const tide_data = <?php echo json_encode($tide_data_array['tide'], JSON_THROW_ON_ERROR); ?>;
     const wind_speed = <?php echo json_encode($weather_data['wind_speed'] ?? [], JSON_THROW_ON_ERROR); ?>;
+    const bite_peak_hours = <?php echo json_encode($shioyomi['bite_score']['peak_hours'] ?? [], JSON_THROW_ON_ERROR); ?>;
+    const bite_hourly = <?php echo json_encode($shioyomi['bite_score']['hourly'] ?? [], JSON_THROW_ON_ERROR); ?>;
     
     const tide_time = get_dataset(tide_data, 'time');
     const tide_cm = get_dataset(tide_data, 'cm');
@@ -376,20 +443,182 @@ include_once __DIR__ . '/header.php';
         return null;
     });
 
+    const peakHourSet = {};
+    (bite_peak_hours || []).forEach(function (h) { peakHourSet[h] = true; });
+
+    const biteByHour = {};
+    (bite_hourly || []).forEach(function (row) {
+        biteByHour[row.hour] = row;
+    });
+
+    function mergePeakHourRanges(hours) {
+        const sorted = hours.slice().sort(function (a, b) { return a - b; });
+        const ranges = [];
+        sorted.forEach(function (hour) {
+            const last = ranges[ranges.length - 1];
+            if (last && hour === last.end + 1) {
+                last.end = hour;
+            } else {
+                ranges.push({ start: hour, end: hour });
+            }
+        });
+        return ranges;
+    }
+
+    function syncPeakBandOverlay(chart) {
+        const layer = document.getElementById('peak-band-layer');
+        if (!layer || !chart || !chart.canvas || chart.canvas.id !== 'chart') return;
+        const xAxis = chart.scales['x-axis-0'];
+        const area = chart.chartArea;
+        if (!xAxis || !area) return;
+        const labels = chart.data.labels || [];
+        const hours = Object.keys(peakHourSet).map(Number);
+        const ranges = mergePeakHourRanges(hours);
+        layer.innerHTML = '';
+        ranges.forEach(function (range) {
+            const startIdx = range.start * 3;
+            const endIdx = Math.min((range.end + 1) * 3, labels.length - 1);
+            if (startIdx >= labels.length || startIdx < 0) return;
+            const x1 = xAxis.getPixelForTick(startIdx);
+            const x2 = xAxis.getPixelForTick(endIdx);
+            if (!isFinite(x1) || !isFinite(x2)) return;
+            const left = Math.min(x1, x2);
+            const width = Math.max(8, Math.abs(x2 - x1));
+            const band = document.createElement('div');
+            band.className = 'peak-band';
+            band.style.left = left + 'px';
+            band.style.width = width + 'px';
+            band.style.top = area.top + 'px';
+            band.style.height = Math.max(0, area.bottom - area.top) + 'px';
+            layer.appendChild(band);
+        });
+    }
+
+    // 各正時のチャート上端に ★ を縦積み（第3軸なし・数値ボックスなし）
+    function syncBiteStarOverlay(chart) {
+        const layer = document.getElementById('bite-star-layer');
+        if (!layer || !chart || !chart.canvas || chart.canvas.id !== 'chart') return;
+        const xAxis = chart.scales['x-axis-0'];
+        const area = chart.chartArea;
+        if (!xAxis || !area) return;
+        const labels = chart.data.labels || [];
+        layer.innerHTML = '';
+        for (let hour = 0; hour < 24; hour++) {
+            const row = biteByHour[hour];
+            if (!row) continue;
+            const stars = Math.max(0, Math.min(5, Number(row.stars) || 0));
+            if (stars <= 0) continue;
+            const idx = hour * 3;
+            if (idx >= labels.length) continue;
+            const x = xAxis.getPixelForTick(idx);
+            if (!isFinite(x)) continue;
+            const col = document.createElement('div');
+            col.className = 'bite-star-col' + (peakHourSet[hour] ? ' is-peak' : '');
+            col.style.left = x + 'px';
+            col.style.top = (area.top + 2) + 'px';
+            col.textContent = '★'.repeat(stars);
+            // 縦積み表示（文字を1つずつ改行）
+            col.innerHTML = '';
+            for (let s = 0; s < stars; s++) {
+                const span = document.createElement('span');
+                span.textContent = '★';
+                col.appendChild(span);
+            }
+            layer.appendChild(col);
+        }
+    }
+
     Chart.defaults.global.defaultFontColor = '#333';
     Chart.defaults.global.defaultFontFamily = "'Inter', 'Noto Sans JP', sans-serif";
     
     const ctx = document.getElementById('chart').getContext('2d');
 
-    const adjustStyles = (chart, width) => {
+    // Chart.js 2.7: はっきりした黄色い縦帯（潮位 fill の上でも黄色と分かる濃さ）＋時間帯★
+    if (!window.__SHIOYOMI_PEAK_BAND_PLUGIN__) {
+        window.__SHIOYOMI_PEAK_BAND_PLUGIN__ = true;
+        Chart.pluginService.register({
+            id: 'shioyomiPeakBands',
+            beforeDatasetsDraw: function (chart) {
+                if (!chart.canvas || chart.canvas.id !== 'chart') return;
+                const xAxis = chart.scales['x-axis-0'];
+                const area = chart.chartArea;
+                if (!xAxis || !area) return;
+                const labels = chart.data.labels || [];
+                const ctx2 = chart.chart.ctx;
+                mergePeakHourRanges(Object.keys(peakHourSet).map(Number)).forEach(function (range) {
+                    const startIdx = range.start * 3;
+                    const endIdx = Math.min((range.end + 1) * 3, labels.length - 1);
+                    if (startIdx >= labels.length || startIdx < 0) return;
+                    const x1 = xAxis.getPixelForTick(startIdx);
+                    const x2 = xAxis.getPixelForTick(endIdx);
+                    if (!isFinite(x1) || !isFinite(x2)) return;
+                    const left = Math.min(x1, x2);
+                    const width = Math.max(8, Math.abs(x2 - x1));
+                    ctx2.save();
+                    ctx2.fillStyle = 'rgba(255, 220, 0, 0.40)';
+                    ctx2.fillRect(left, area.top, width, area.bottom - area.top);
+                    ctx2.restore();
+                });
+            },
+            afterDatasetsDraw: function (chart) {
+                if (!chart.canvas || chart.canvas.id !== 'chart') return;
+                const xAxis = chart.scales['x-axis-0'];
+                const area = chart.chartArea;
+                if (!xAxis || !area) return;
+                const labels = chart.data.labels || [];
+                const ctx2 = chart.chart.ctx;
+                mergePeakHourRanges(Object.keys(peakHourSet).map(Number)).forEach(function (range) {
+                    const startIdx = range.start * 3;
+                    const endIdx = Math.min((range.end + 1) * 3, labels.length - 1);
+                    if (startIdx >= labels.length || startIdx < 0) return;
+                    const x1 = xAxis.getPixelForTick(startIdx);
+                    const x2 = xAxis.getPixelForTick(endIdx);
+                    if (!isFinite(x1) || !isFinite(x2)) return;
+                    const left = Math.min(x1, x2);
+                    const width = Math.max(8, Math.abs(x2 - x1));
+                    ctx2.save();
+                    // fill の上に薄い黄色を重ね、ベージュ化を防ぐ
+                    ctx2.fillStyle = 'rgba(255, 235, 59, 0.35)';
+                    ctx2.fillRect(left, area.top, width, area.bottom - area.top);
+                    ctx2.strokeStyle = 'rgba(255, 193, 7, 0.95)';
+                    ctx2.lineWidth = 2;
+                    ctx2.beginPath();
+                    ctx2.moveTo(left, area.top);
+                    ctx2.lineTo(left, area.bottom);
+                    ctx2.moveTo(left + width, area.top);
+                    ctx2.lineTo(left + width, area.bottom);
+                    ctx2.stroke();
+                    ctx2.restore();
+                });
+                syncPeakBandOverlay(chart);
+                syncBiteStarOverlay(chart);
+            }
+        });
+    }
+
+    const adjustStyles = function (chart, width) {
+        const tide = chart.data.datasets[0];
+        const wind = chart.data.datasets[1];
         if (width < 768) {
-            chart.data.datasets[0].borderWidth = 2;
-            chart.data.datasets[0].pointHoverBorderWidth = 3;
-            if(chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 2;
+            tide.borderWidth = 2;
+            tide.pointRadius = 3;
+            tide.pointHoverRadius = 5;
+            tide.pointHoverBorderWidth = 2;
+            tide.pointBorderWidth = 2;
+            if (wind) {
+                wind.borderWidth = 2;
+                wind.pointRadius = 2.5;
+            }
         } else {
-            chart.data.datasets[0].borderWidth = 7;
-            chart.data.datasets[0].pointHoverBorderWidth = 10;
-            if(chart.data.datasets[1]) chart.data.datasets[1].borderWidth = 3;
+            tide.borderWidth = 7;
+            tide.pointRadius = 3;
+            tide.pointHoverRadius = 6;
+            tide.pointHoverBorderWidth = 2;
+            tide.pointBorderWidth = 2;
+            if (wind) {
+                wind.borderWidth = 3;
+                wind.pointRadius = 2;
+            }
         }
     };
     
@@ -405,16 +634,21 @@ include_once __DIR__ . '/header.php';
                     fill: true,
                     borderColor: '#35b0eb',
                     backgroundColor: 'rgba(169, 227, 255, 0.5)',
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#35b0eb',
+                    pointBorderWidth: 2,
                     lineTension: 0.5,
                     borderWidth: 7,
-                    pointHoverBorderWidth: 10,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointHoverBorderWidth: 2,
                 },
                 {
                     label: '風速 (m/s)',
                     yAxisID: 'y-axis-2',
                     data: mapped_wind_speed,
                     fill: false,
-                    spanGaps: true, // nullの部分を線で結ぶ
+                    spanGaps: true,
                     borderColor: '#2ecc71',
                     backgroundColor: '#2ecc71',
                     borderDash: [5, 5],
@@ -428,22 +662,60 @@ include_once __DIR__ . '/header.php';
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            onResize: (chart, size) => {
+            onResize: function (chart, size) {
                 adjustStyles(chart, size.width);
                 chart.update();
             },
             tooltips: {
                 mode: 'index',
                 intersect: false,
+                callbacks: {
+                    afterBody: function (items) {
+                        if (!items || !items.length) return;
+                        const idx = items[0].index;
+                        let hour = Math.floor(idx / 3);
+                        if (hour >= 24) hour = 23;
+                        const row = biteByHour[hour];
+                        if (!row) return;
+                        const n = Math.max(0, Math.min(5, Number(row.stars) || 0));
+                        return '★'.repeat(n) + '☆'.repeat(5 - n) + ' (' + Number(row.score).toFixed(1) + ')';
+                    }
+                }
             },
             legend: {
                 display: true,
                 position: 'bottom',
                 labels: {
                     usePointStyle: true,
+                    generateLabels: function (chart) {
+                        const labels = Chart.defaults.global.legend.labels.generateLabels(chart);
+                        labels.push({
+                            text: '★＝活性目安',
+                            fillStyle: '#d97706',
+                            strokeStyle: '#d97706',
+                            lineWidth: 0,
+                            hidden: false,
+                            index: -1,
+                            datasetIndex: -1
+                        });
+                        return labels;
+                    }
                 }
             },
             scales: {
+                xAxes: [{
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        callback: function (value, index) {
+                            if (index % 9 === 0 || index === tide_time.length - 1) {
+                                return value;
+                            }
+                            return '';
+                        }
+                    }
+                }],
                 yAxes: [
                     {
                         id: 'y-axis-1',
@@ -462,7 +734,7 @@ include_once __DIR__ . '/header.php';
                         type: 'linear',
                         position: 'right',
                         gridLines: {
-                            drawOnChartArea: false, // 2つ目の軸のグリッド線は消す
+                            drawOnChartArea: false,
                         },
                         ticks: {
                             beginAtZero: true

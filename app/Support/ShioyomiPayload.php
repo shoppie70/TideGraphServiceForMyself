@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Services\BiteScoreService;
 use App\Services\CalendarService;
 use App\Services\TideGraphService;
 use App\Services\WeatherService;
@@ -85,14 +86,33 @@ class ShioyomiPayload
             $payload['places'] = PlaceResolver::all();
         }
 
+        $tideSeries = array_map(static function ($point): array {
+            return [
+                'time' => $point['time'] ?? null,
+                'cm' => isset($point['cm']) ? (float)$point['cm'] : null,
+            ];
+        }, $tide['tide'] ?? []);
+
         if ($includeSeries) {
-            $payload['tide'] = array_map(static function ($point): array {
-                return [
-                    'time' => $point['time'] ?? null,
-                    'cm' => isset($point['cm']) ? (float)$point['cm'] : null,
-                ];
-            }, $tide['tide'] ?? []);
+            $payload['tide'] = $tideSeries;
         }
+
+        $windSpeedMs = null;
+        $pressureHpa = null;
+        if (is_array($payload['weather'] ?? null)) {
+            $windSpeedMs = $payload['weather']['wind_speed_ms'] ?? null;
+            $pressureHpa = $payload['weather']['pressure_hpa'] ?? null;
+        }
+
+        $payload['bite_score'] = BiteScoreService::compute(
+            $tideSeries,
+            $payload['flood'],
+            $payload['edd'],
+            $payload['moon'],
+            $payload['sun'],
+            is_array($windSpeedMs) ? $windSpeedMs : null,
+            is_array($pressureHpa) ? $pressureHpa : null
+        );
 
         $payload['summary_text'] = self::buildTideSummaryText($payload);
 
@@ -221,6 +241,7 @@ class ShioyomiPayload
             'temp_max' => $weather['temp_max'] ?? null,
             'temp_min' => $weather['temp_min'] ?? null,
             'wind_speed_ms' => $weather['wind_speed'] ?? [],
+            'pressure_hpa' => $weather['surface_pressure'] ?? [],
         ];
     }
 
@@ -238,6 +259,7 @@ class ShioyomiPayload
             )
             : '天気データなし。';
 
+        // UI / ページ HTML 向け要約にはスコア名称を含めない（数値は bite_score フィールドで提供）
         return sprintf(
             '%s（%s）の %s。潮回りは%s。日の出 %s、日の入 %s。満潮 %s。干潮 %s。%s',
             $payload['place']['harbor_name'] ?? $payload['place']['name'],

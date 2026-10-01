@@ -54,7 +54,9 @@ series 省略（サマリのみ）:
 - `include_weather=0` — 天気取得を省略（上流待ち時間短縮）
 - `include_places=1` — 登録港一覧をペイロードに含める（既定は API では省略）
 
-主なフィールド: `place`, `date`, `moon`, `sun`, `flood`, `edd`, `weather`, `tide`, `summary_text`, `map_url`
+主なフィールド: `place`, `date`, `moon`, `sun`, `flood`, `edd`, `weather`, `tide`, `bite_score`, `summary_text`, `map_url`
+
+`bite_score`（釣時スコア）: 0.0〜5.0 の独自透明指標。`hourly[]`（1時間ごと `score`/`stars`/`factors`）、`day_peak`、`peak_hours` を含む。★1＝スコア1.0。潮汐位相・潮の動き・潮位差・潮回り・風・気圧・日の出入りから算出（釣果保証ではない。他社 BI の非公開式は未使用）。`weather.pressure_hpa` に時間別気圧がある場合あり。
 
 ### 月間カレンダー（同様にパス形式推奨）
 
