@@ -331,10 +331,21 @@ include_once __DIR__ . '/header.php';
         grid-column: 3;
         justify-self: end;
     }
-    /* 満潮・干潮は 時刻 | cm の2列 */
+    /* 満潮・干潮: 時刻（主）の直後に cm（副） */
     .tide-event-list.is-flood .tide-event-item,
     .tide-event-list.is-edd .tide-event-item {
-        grid-template-columns: 1fr auto;
+        display: flex;
+        justify-content: flex-start;
+        align-items: baseline;
+        gap: 0.55rem;
+    }
+    .tide-event-list.is-turn .tide-event-item {
+        grid-template-columns: auto auto 1fr;
+        column-gap: 0.4rem;
+    }
+    .tide-event-list.is-turn .tide-event-item > .tide-event-meta {
+        justify-self: start;
+        color: #6b7280 !important;
     }
     .tide-event-time {
         font-variant-numeric: tabular-nums;
