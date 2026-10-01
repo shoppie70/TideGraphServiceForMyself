@@ -1,6 +1,7 @@
 /vendor/
 .DS_Store
 .user.ini
+composer.phar
 mcp-server/node_modules/
 
 # UI UX Pro Max generated caches
